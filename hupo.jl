@@ -124,48 +124,61 @@ function execute!(state,a)
     won, reward
 end
 
-global state = Array{Int}(6*2+6)
+function game(net1,net2)
+    states_top = Array{Int}(0,18)
+    rewards_top = Vector{Float64}()
+    states_bot = Array{Int}(0,18)
+    rewards_bot = Vector{Float64}()
 
+    state = Array{Int}(6*2+6)
+    fill_state_beginning!(state)
+    active_player = "top"
 
-states_top = Array{Int}(0,18)
-rewards_top = Vector{Float64}()
-states_bot = Array{Int}(0,18)
-rewards_bot = Vector{Float64}()
-function game()
+    while true
+        a = action(state,0)
+        won, reward = execute!(state,a)
+        if active_player=="top"
+            states_top = vcat(states_top,deepcopy(state)')
+            push!(rewards_top, reward)
+            (won=="top player won") && (rewards_top[end]+=3)
+            (won=="bottom player won") && (rewards_top[end]-=3)
+        else
+            states_bot = vcat(states_bot,deepcopy(state)')
+            push!(rewards_bot, reward)
+            (won=="top player won") && (rewards_bot[end]-=3)
+            (won=="bottom player won") && (rewards_bot[end]+=3)
+        end
 
-game = 1
-fill_state_beginning!(state)
-active_player = "top"
-round_number = 1
-
-
-while true
-    println("Round $(round_number)")
-    print_state(state)
-    println()
-    a = action(state,0)
-    won, reward = execute!(state,a)
-    if active_player=="top"
-        states_top = vcat(states_top,deepcopy(state)')
-        push!(rewards_top, reward)
-        (won=="top player won") && (rewards_top[end]+=3)
-        (won=="bottom player won") && (rewards_top[end]-=3)
-    else
-        states_bot = vcat(states_bot,deepcopy(state)')
-        push!(rewards_bot, reward)
-        (won=="top player won") && (rewards_bot[end]-=3)
-        (won=="bottom player won") && (rewards_bot[end]+=3)
+        if !(won=="")
+            break
+        end
+        active_player = active_player == "top" ? "bottom":"top"
     end
 
-    if !(won=="")
-        println(won)
-        break
-    end
-    active_player = active_player == "top" ? "bottom":"top"
-    round_number += 1
+    states_top, rewards_top, states_bot, rewards_bot
 end
 
-states_bot
-rewards_bot
-states_top
-rewards_top
+
+function game_show(net1,net2)
+    state = Array{Int}(6*2+6)
+    fill_state_beginning!(state)
+    active_player = "top"
+    round_number = 1
+
+    while true
+        println("Round $(round_number)")
+        print_state(state)
+        println()
+        a = action(state,0)
+        won, _ = execute!(state,a)
+        if !(won=="")
+            println(won)
+            break
+        end
+        active_player = active_player == "top" ? "bottom":"top"
+        round_number += 1
+    end
+end
+
+st, rt, sb, rb = game(5,7)
+game_show(5,7)
