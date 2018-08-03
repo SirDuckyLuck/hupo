@@ -1,10 +1,3 @@
-#first six are coordinates for top player (row and column), in case of being out of the game it is 0 0
-#second six are coordinates for bottom player
-#next three are states for top player: 2 == has tottem, 1 == had totem, 0 == did not have totem, -1 == out of the game
-#last three are states for bottom player
-#actions are coded with two numbers: first is 1 for moving top, 2 for right, 3 for bottom, 4 for left.
-#second number is giving stone to whom to give totem (1-3 top player, 4-6 bottom player)
-
 function fill_state_beginning!(state)
     state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
 end
