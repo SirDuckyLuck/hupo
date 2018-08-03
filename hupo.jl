@@ -3,7 +3,7 @@ function fill_state_beginning!(state)
 end
 
 function print_state(state::Array{Int})
-    M = Array{String}(5,3)
+    M = Array{String}(undef,5,3)
     fill!(M,"-")
     M[3,2] = "x"
     for i in 1:6
@@ -15,10 +15,10 @@ function print_state(state::Array{Int})
 end
 
 function action(state, net, exploration=0.)
-    a = Array{Bool}(4,6) #which direction, #whom to pass
+    a = Array{Bool}(undef,4,6) #which direction, #whom to pass
     fill!(a,true)
-    active = find(state[13:end] .== 2)
-    stone_position = [state[active*2-1];state[active*2]]
+    active = findall(state[13:end] .== 2)
+    stone_position = [state[active*2 .- 1];state[active*2]]
 
     for move in 1:4 #check moves
         new_position = copy(stone_position)
@@ -48,9 +48,9 @@ function action(state, net, exploration=0.)
         end
     end
 
-    v = rand()<exploration ? rand(4*6):rand(4*6)#net(state)
+    v = rand()<exploration ? rand(4*6) : rand(4*6)#net(state)
 
-    v[.!vec(a)] = 0.0
+    v[.!vec(a)] .= 0.0
     v ./= sum(v)
     value, best_move = findmax(v)
     if isnan(value)
@@ -58,15 +58,15 @@ function action(state, net, exploration=0.)
         return "error"
     end
 
-    move_to = mod(best_move,4)==0 ? 4:mod(best_move,4)
-    pass_to = mod(best_move,4)==0 ? div(best_move,4):div(best_move,4)+1
+    move_to = mod(best_move,4)==0 ? 4 : mod(best_move,4)
+    pass_to = mod(best_move,4)==0 ? div(best_move,4) : div(best_move,4)+1
     move_to, pass_to
 end
 
 function execute!(state,a)
     won = ""
     reward = 0.
-    active = find(state[13:end] .== 2)[1]
+    active = findall(state[13:end] .== 2)[1]
 
     #move the stone
     if a[1] == 1
@@ -119,17 +119,17 @@ function execute!(state,a)
 end
 
 function game(net_top, net_bot, exploration)
-    states_top = Array{Int}(0,18)
+    states_top = Array{Int}(undef,0,18)
     rewards_top = Vector{Float64}()
-    states_bot = Array{Int}(0,18)
+    states_bot = Array{Int}(undef,0,18)
     rewards_bot = Vector{Float64}()
 
-    state = Array{Int}(6*2+6)
+    state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
 
     while true
-        a = active_player == "top" ? action(state, net_top, exploration):action(state, net_bot, exploration)
+        a = active_player == "top" ? action(state, net_top, exploration) : action(state, net_bot, exploration)
         won, reward = execute!(state,a)
         if active_player=="top"
             states_top = vcat(states_top,deepcopy(state)')
@@ -146,7 +146,7 @@ function game(net_top, net_bot, exploration)
         if !(won=="")
             break
         end
-        active_player = active_player == "top" ? "bottom":"top"
+        active_player = active_player == "top" ? "bottom" : "top"
     end
 
     states_top, rewards_top, states_bot, rewards_bot
@@ -154,7 +154,7 @@ end
 
 
 function game_show(net_top, net_bot)
-    state = Array{Int}(6*2+6)
+    state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
     round_number = 1
@@ -163,13 +163,13 @@ function game_show(net_top, net_bot)
         println("Round $(round_number)")
         print_state(state)
         println()
-        a = active_player == "top" ? action(state, net_top):action(state, net_bot)
+        a = active_player == "top" ? action(state, net_top) : action(state, net_bot)
         won, _ = execute!(state,a)
         if !(won=="")
             println(won)
             break
         end
-        active_player = active_player == "top" ? "bottom":"top"
+        active_player = active_player == "top" ? "bottom" : "top"
         round_number += 1
     end
 end

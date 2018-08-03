@@ -2,9 +2,9 @@ using Flux
 include("hupo.jl")
 
 function collectData(numOfGames, net_top, net_bot, exploration)
-  states_top = Array{Int}(0,18)
+  states_top = Array{Int}(undef,0,18)
   rewards_top = Vector{Float64}()
-  states_bot = Array{Int}(0,18)
+  states_bot = Array{Int}(undef,0,18)
   rewards_bot = Vector{Float64}()
 
   for i in 1:numOfGames
