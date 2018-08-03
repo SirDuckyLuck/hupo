@@ -21,7 +21,7 @@ function print_state(state::Array{Int})
     Base.showarray(STDOUT,M,false)
 end
 
-function action(state, net)
+function action(state, net, exploration=0.)
     a = Array{Bool}(4,6) #which direction, #whom to pass
     fill!(a,true)
     active = find(state[13:end] .== 2)
@@ -55,7 +55,8 @@ function action(state, net)
         end
     end
 
-    v = rand(4*6)
+    v = rand()<exploration ? rand(4*6):rand(4*6)#net(state)
+
     v[.!vec(a)] = 0.0
     v ./= sum(v)
     value, best_move = findmax(v)
@@ -124,7 +125,7 @@ function execute!(state,a)
     won, reward
 end
 
-function game(net1,net2)
+function game(net_top, net_bot, exploration)
     states_top = Array{Int}(0,18)
     rewards_top = Vector{Float64}()
     states_bot = Array{Int}(0,18)
@@ -135,7 +136,7 @@ function game(net1,net2)
     active_player = "top"
 
     while true
-        a = action(state,0)
+        a = active_player == "top" ? action(state, net_top, exploration):action(state, net_bot, exploration)
         won, reward = execute!(state,a)
         if active_player=="top"
             states_top = vcat(states_top,deepcopy(state)')
@@ -159,7 +160,7 @@ function game(net1,net2)
 end
 
 
-function game_show(net1,net2)
+function game_show(net_top, net_bot)
     state = Array{Int}(6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
@@ -169,7 +170,7 @@ function game_show(net1,net2)
         println("Round $(round_number)")
         print_state(state)
         println()
-        a = action(state,0)
+        a = active_player == "top" ? action(state, net_top):action(state, net_bot)
         won, _ = execute!(state,a)
         if !(won=="")
             println(won)
@@ -180,5 +181,5 @@ function game_show(net1,net2)
     end
 end
 
-st, rt, sb, rb = game(5,7)
+st, rt, sb, rb = game([],[],0.1)
 game_show(5,7)
