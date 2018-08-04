@@ -48,7 +48,7 @@ function action(state, net, exploration=0.)
         end
     end
 
-    v = rand()<exploration ? rand(4*6) : rand(4*6)#net(state)
+    v = rand()<exploration ? rand(4*6) : net(state).data
 
     v[.!vec(a)] .= 0.0
     v ./= sum(v)
@@ -175,4 +175,4 @@ function game_show(net_top, net_bot)
 end
 
 st, rt, sb, rb = game([],[],0.1)
-game_show(5,7)
+# game_show(5,7)

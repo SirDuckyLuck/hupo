@@ -18,5 +18,14 @@ function collectData(numOfGames, net_top, net_bot, exploration)
   states_top, rewards_top, states_bot, rewards_bot
 end
 
+net_top = Chain(
+  Dense(18, 100, relu),
+  Dense(100, 24),
+  softmax)
 
-collectData(50, [], [], 0.1)
+net_bot = Chain(
+  Dense(18, 100, relu),
+  Dense(100, 24),
+  softmax)
+
+st, rt, sb, rb = collectData(50, net_top, net_bot, 0.1)
