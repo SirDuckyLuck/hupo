@@ -58,9 +58,11 @@ function action(state, net, exploration=0.)
         return "error"
     end
 
+    p = net(state).data[best_move] #probability of choosing this action
+
     move_to = mod(best_move,4)==0 ? 4 : mod(best_move,4)
     pass_to = mod(best_move,4)==0 ? div(best_move,4) : div(best_move,4)+1
-    move_to, pass_to
+    (move_to, pass_to), p
 end
 
 function execute!(state,a)
@@ -105,7 +107,7 @@ function execute!(state,a)
     if  state[active*2-1] ∈ [0; 6] || state[active*2] ∈ [0 4]
         state[(active*2-1):(active*2)] = [0;0]
         state[12+active] = -1
-        reward = -1.
+        # reward = -1.
     end
 
     #check if anyone won
@@ -121,35 +123,37 @@ end
 function game(net_top, net_bot, exploration)
     states_top = Array{Int}(undef,0,18)
     rewards_top = Vector{Float64}()
+    probability_top = Vector{Float64}()
     states_bot = Array{Int}(undef,0,18)
     rewards_bot = Vector{Float64}()
+    probability_bot = Vector{Float64}()
 
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
 
     while true
-        a = active_player == "top" ? action(state, net_top, exploration) : action(state, net_bot, exploration)
+        a, p = active_player == "top" ? action(state, net_top, exploration) : action(state, net_bot, exploration)
         won, reward = execute!(state,a)
         if active_player=="top"
             states_top = vcat(states_top,deepcopy(state)')
             push!(rewards_top, reward)
-            (won=="top player won") && (rewards_top[end]+=3)
-            (won=="bottom player won") && (rewards_top[end]-=3)
+            push!(probability_top, p)
         else
             states_bot = vcat(states_bot,deepcopy(state)')
             push!(rewards_bot, reward)
-            (won=="top player won") && (rewards_bot[end]-=3)
-            (won=="bottom player won") && (rewards_bot[end]+=3)
+            push!(probability_bot, p)
         end
 
         if !(won=="")
+            (won=="top player won") && (rewards_top .+= 1; rewards_bot .-= 1)
+            (won=="bottom player won") && (rewards_top .-= 1; rewards_bot .+= 1)
             break
         end
         active_player = active_player == "top" ? "bottom" : "top"
     end
 
-    states_top, rewards_top, states_bot, rewards_bot
+    states_top, rewards_top, probability_top, states_bot, rewards_bot, probability_bot
 end
 
 
@@ -163,7 +167,7 @@ function game_show(net_top, net_bot)
         println("Round $(round_number)")
         print_state(state)
         println()
-        a = active_player == "top" ? action(state, net_top) : action(state, net_bot)
+        a, _ = active_player == "top" ? action(state, net_top) : action(state, net_bot)
         won, _ = execute!(state,a)
         if !(won=="")
             println(won)
@@ -173,6 +177,3 @@ function game_show(net_top, net_bot)
         round_number += 1
     end
 end
-
-st, rt, sb, rb = game([],[],0.1)
-# game_show(5,7)
