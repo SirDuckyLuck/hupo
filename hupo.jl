@@ -58,11 +58,9 @@ function action(state, net, exploration=0.)
         return "error"
     end
 
-    p = net(state).data[best_move] #probability of choosing this action
-
     move_to = mod(best_move,4)==0 ? 4 : mod(best_move,4)
     pass_to = mod(best_move,4)==0 ? div(best_move,4) : div(best_move,4)+1
-    (move_to, pass_to), p
+    (move_to, pass_to), best_move
 end
 
 function execute!(state,a)
@@ -123,10 +121,10 @@ end
 function game(net_top, net_bot, exploration)
     states_top = Array{Int}(undef,0,18)
     rewards_top = Vector{Float64}()
-    probability_top = Vector{Float64}()
+    move_top = Vector{Float64}()
     states_bot = Array{Int}(undef,0,18)
     rewards_bot = Vector{Float64}()
-    probability_bot = Vector{Float64}()
+    move_bot = Vector{Float64}()
 
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
@@ -138,11 +136,11 @@ function game(net_top, net_bot, exploration)
         if active_player=="top"
             states_top = vcat(states_top,deepcopy(state)')
             push!(rewards_top, reward)
-            push!(probability_top, p)
+            push!(move_top, p)
         else
             states_bot = vcat(states_bot,deepcopy(state)')
             push!(rewards_bot, reward)
-            push!(probability_bot, p)
+            push!(move_bot, p)
         end
 
         if !(won=="")
@@ -153,7 +151,7 @@ function game(net_top, net_bot, exploration)
         active_player = active_player == "top" ? "bottom" : "top"
     end
 
-    states_top, rewards_top, probability_top, states_bot, rewards_bot, probability_bot
+    states_top, rewards_top, move_top, states_bot, rewards_bot, move_bot
 end
 
 
