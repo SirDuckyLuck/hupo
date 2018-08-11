@@ -1,5 +1,4 @@
 using Flux
-using Flux.Tracker
 include("hupo.jl")
 
 function collectData(numOfGames, net_top, net_bot, exploration)
@@ -41,7 +40,7 @@ function loss(x,y)
     -sum(log.(p) .* y)
 end
 
-x = hcat(st,pt)
+x = hcat(st,mt)
 y = rt
 data = Iterators.repeated((x, y), 1)
 opt = ADAM(Flux.params(net_top))

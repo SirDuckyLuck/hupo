@@ -65,7 +65,6 @@ end
 
 function execute!(state,a)
     won = ""
-    reward = 0.
     active = findall(state[13:end] .== 2)[1]
 
     #move the stone
@@ -105,7 +104,6 @@ function execute!(state,a)
     if  state[active*2-1] ∈ [0; 6] || state[active*2] ∈ [0 4]
         state[(active*2-1):(active*2)] = [0;0]
         state[12+active] = -1
-        # reward = -1.
     end
 
     #check if anyone won
@@ -115,7 +113,7 @@ function execute!(state,a)
         won = "bottom player won"
     end
 
-    won, reward
+    won
 end
 
 function game(net_top, net_bot, exploration)
@@ -132,14 +130,14 @@ function game(net_top, net_bot, exploration)
 
     while true
         a, p = active_player == "top" ? action(state, net_top, exploration) : action(state, net_bot, exploration)
-        won, reward = execute!(state,a)
+        won = execute!(state,a)
         if active_player=="top"
             states_top = vcat(states_top,deepcopy(state)')
-            push!(rewards_top, reward)
+            push!(rewards_top, 0.)
             push!(move_top, p)
         else
             states_bot = vcat(states_bot,deepcopy(state)')
-            push!(rewards_bot, reward)
+            push!(rewards_bot, 0.)
             push!(move_bot, p)
         end
 
@@ -166,7 +164,7 @@ function game_show(net_top, net_bot)
         print_state(state)
         println()
         a, _ = active_player == "top" ? action(state, net_top) : action(state, net_bot)
-        won, _ = execute!(state,a)
+        won = execute!(state,a)
         if !(won=="")
             println(won)
             break
