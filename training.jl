@@ -47,3 +47,5 @@ opt = ADAM(Flux.params(net_top))
 
 Flux.train!(loss, data, opt)
 loss(x,rt)
+
+game_show(net_top, net_bot)

@@ -2,6 +2,20 @@ function fill_state_beginning!(state)
     state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
 end
 
+function print_state2(state::Array{Int})
+    M = Array{String}(5,3)
+    fill!(M,"⋅")
+    M[3,2] = "x"
+    for i in 1:6
+        state[12+i] == -1 && continue
+        id = i*2-1
+        M[state[id],state[id+1]] = string(state[12+i])
+    end
+    for i in 1:size(M, 1)
+        println(join(M[i, :], "   "))
+    end
+end
+
 function print_state(state::Array{Int})
     M = Array{String}(undef,5,3)
     fill!(M,"-")
@@ -159,10 +173,10 @@ function game_show(net_top, net_bot)
     active_player = "top"
     round_number = 1
 
+    println()
     while true
         println("Round $(round_number)")
-        print_state(state)
-        println()
+        print_state2(state)
         a, _ = active_player == "top" ? action(state, net_top) : action(state, net_bot)
         won = execute!(state,a)
         if !(won=="")
@@ -171,5 +185,6 @@ function game_show(net_top, net_bot)
         end
         active_player = active_player == "top" ? "bottom" : "top"
         round_number += 1
+        println("\033[7A" * "\033[K\n" ^ n * "\033[7A")
     end
 end
