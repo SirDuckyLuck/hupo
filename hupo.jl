@@ -32,14 +32,20 @@ function action(state, net, exploration=0.)
             new_position[2] -=1
         end
 
+        #check for middle
         if new_position == [3; 2]
             a[move,:] .= false
         end
+        #check if there is another stone
         for stone in 1:6
             if new_position == state[stone*2-1:stone*2]
                 a[move,:] .= false
             end
         end
+        #check if out of the board
+        # if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
+        #     a[move,:] .= false
+        # end
     end
 
     for pass in 1:6
@@ -54,8 +60,7 @@ function action(state, net, exploration=0.)
     v ./= sum(v)
     value, best_move = findmax(v)
     if isnan(value)
-        println("cant move")
-        return "error"
+      return "error"
     end
 
     move_to = mod(best_move,4)==0 ? 4 : mod(best_move,4)
