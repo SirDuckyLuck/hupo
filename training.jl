@@ -39,13 +39,21 @@ function loss(x,y)
     p = [p_all[Int(x[i,end]),i] for i in 1:size(p_all,2)]
     -sum(log.(p) .* y)
 end
+function loss2(x,s,y)
+    p_all = net_top(x[:,1:end]')
+  #  p = [p_all[Int(s[i,e nd]),i] for i in 1:size(p_all,2)]
+    p=s .* p_all
+    #-sum(log.(p) .* y)
+    crossentropy(p, y)
+end
 
-x = hcat(st,mt)
+# x = hcat(st,mt)
 y = rt
-data = Iterators.repeated((x, y), 1)
+# data = Iterators.repeated((x, y), 1)
+data = Iterators.repeated((st, mt, y), 1)
 opt = ADAM(Flux.params(net_top))
 
-Flux.train!(loss, data, opt)
+Flux.train!(loss2, data, opt)
 loss(x,rt)
 
 game_show(net_top, net_bot)

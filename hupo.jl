@@ -182,7 +182,7 @@ function game_show(net_top, net_bot)
     while true
         println("Round $(round_number)")
         print_state2(state)
-        a, _ = active_player == "top" ? action(state, net_top) : action(state, net_bot)
+        a, p = active_player == "top" ? action(state, net_top) : action(state, net_bot)
         won = execute!(state,a)
         if !(won=="")
             println(won)
@@ -190,6 +190,7 @@ function game_show(net_top, net_bot)
         end
         active_player = active_player == "top" ? "bottom" : "top"
         round_number += 1
-        println("\033[7A" * "\033[K\n" ^ n * "\033[7A")
+	sleep(5)
+        println("\033[7A" * "\033[K\n" ^ 7 * "\033[7A")
     end
 end
