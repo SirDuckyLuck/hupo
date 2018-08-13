@@ -32,28 +32,27 @@ net_bot = Chain(
   Dense(100, 24),
   softmax)
 
-st, rt, mt, sb, rb, mb = collectData(50, net_top, net_bot, 0.0)
 
-function loss(x,y)
-    p_all = net_top(x[:,1:end-1]')
-    p = [p_all[Int(x[i,end]),i] for i in 1:size(p_all,2)]
-    -sum(log.(p) .* y)
-end
-function loss2(x,s,y)
-    p_all = net_top(x[:,1:end]')
-  #  p = [p_all[Int(s[i,e nd]),i] for i in 1:size(p_all,2)]
-    p=s .* p_all
-    #-sum(log.(p) .* y)
-    crossentropy(p, y)
+function loss(state,action,reward)
+    p_all = net_top(state')
+    p = sum(Flux.onehotbatch(action,collect(1:24)) .* p_all, 1)
+    Flux.crossentropy(p, reward)
 end
 
-# x = hcat(st,mt)
-y = rt
-# data = Iterators.repeated((x, y), 1)
-data = Iterators.repeated((st, mt, y), 1)
-opt = ADAM(Flux.params(net_top))
 
-Flux.train!(loss2, data, opt)
-loss(x,rt)
+function train_hupo(net_top, net_bot)
+  numOfEpochs = 300
+  for epoch in 1:numOfEpochs
+    st, rt, mt, sb, rb, mb = collectData(100, net_top, net_bot, 1. - epoch/numOfEpochs)
+    println("Epoch: $(epoch) - average length of game is $(size(st,1)/100))")
+    println("average reward for top player is $(mean(rt))")
+    println("loss is $(loss(st, mt, rt))")
 
+    data = Iterators.repeated((st, mt, rt), 1)
+    opt = ADAM(Flux.params(net_top))
+    Flux.train!(loss, data, opt)
+  end
+end
+
+train_hupo(net_top, net_bot)
 game_show(net_top, net_bot)

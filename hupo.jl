@@ -1,3 +1,5 @@
+@enum Move top right bottom left
+
 function fill_state_beginning!(state)
     state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
 end
@@ -34,31 +36,31 @@ function action(state, net, exploration=0.)
     active = findall(state[13:end] .== 2)
     stone_position = [state[active*2 .- 1];state[active*2]]
 
-    for move in 1:4 #check moves
+    for move in instances(Move) #check moves
         new_position = copy(stone_position)
-        if move == 1
+        if move == top
             new_position[1] -=1
-        elseif move == 2
+        elseif move == right
             new_position[2] +=1
-        elseif move == 3
+        elseif move == bottom
             new_position[1] +=1
-        elseif move == 4
+        elseif move == left
             new_position[2] -=1
         end
 
         #check for middle
         if new_position == [3; 2]
-            a[move,:] .= false
+            a[Int(move)+1,:] .= false
         end
         #check if there is another stone
         for stone in 1:6
             if new_position == state[stone*2-1:stone*2]
-                a[move,:] .= false
+                a[Int(move)+1,:] .= false
             end
         end
         #check if out of the board
         # if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
-        #     a[move,:] .= false
+        #     a[Int(move)+1,:] .= false
         # end
     end
 
@@ -73,27 +75,27 @@ function action(state, net, exploration=0.)
     v[.!vec(a)] .= 0.0
     v ./= sum(v)
     value, best_move = findmax(v)
-    if isnan(value)
-      return "error"
-    end
+    # if isnan(value)
+    #   return "error"
+    # end
 
-    move_to = mod(best_move,4)==0 ? 4 : mod(best_move,4)
+    move_to = Move(mod(best_move,4))# ==0 ? 4 : mod(best_move,4)
     pass_to = mod(best_move,4)==0 ? div(best_move,4) : div(best_move,4)+1
     (move_to, pass_to), best_move
 end
 
-function execute!(state,a)
+function execute!(state, a)
     won = ""
     active = findall(state[13:end] .== 2)[1]
 
     #move the stone
-    if a[1] == 1
+    if a[1] == top
         state[active*2-1] -=1
-    elseif a[1] == 2
+    elseif a[1] == right
         state[active*2] +=1
-    elseif a[1] == 3
+    elseif a[1] == bottom
         state[active*2-1] +=1
-    elseif a[1] == 4
+    elseif a[1] == left
         state[active*2] -=1
     end
 
@@ -190,7 +192,7 @@ function game_show(net_top, net_bot)
         end
         active_player = active_player == "top" ? "bottom" : "top"
         round_number += 1
-	sleep(5)
+	sleep(1)
         println("\033[7A" * "\033[K\n" ^ 7 * "\033[7A")
     end
 end
