@@ -1,9 +1,9 @@
 include("UnicodeGrids.jl")
 using .UnicodeGrids
 
-@enum Move top right bottom left
+@enum Move top right bottom left out
 
-const d_moves = Dict(top => "↑", right => "→", bottom => "↓", left => "←")
+const d_moves = Dict(top => "↑", right => "→", bottom => "↓", left => "←", out => "~")
 
 
 "Clear `n` lines above cursor."
@@ -49,12 +49,12 @@ function print_state(state::Array{Int}, pos, arrow)
 end
 
 function action(state, net)
-    a = Array{Bool}(undef,4,6) #which direction, #whom to pass
+    a = Array{Bool}(undef,5,6) # which direction, #whom to pass
     fill!(a,true)
     active = findall(state[13:end] .== 2)
     stone_position = [state[active*2 .- 1];state[active*2]]
 
-    for move in instances(Move) #check moves
+    for move in instances(Move)[1:4] # check moves plausibility except getting out
         new_position = copy(stone_position)
         if move == top
             new_position[1] -=1
@@ -66,39 +66,40 @@ function action(state, net)
             new_position[2] -=1
         end
 
-        #check for middle
+        # check for middle
         if new_position == [3; 2]
             a[Int(move)+1,:] .= false
         end
-        #check if there is another stone
+        # check if there is another stone
         for stone in 1:6
             if new_position == state[stone*2-1:stone*2]
                 a[Int(move)+1,:] .= false
             end
         end
-        #check if out of the board
-        # if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
-        #     a[Int(move)+1,:] .= false
-        # end
+        # check if out of the board
+        if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
+            a[Int(move)+1,:] .= false
+        end
     end
 
-    for pass in 1:6
+    for pass in 1:6 # check passing plausibility
         if state[12+pass] !=0
             a[:,pass] .= false
         end
     end
 
-    r = rand()
+    # if there is a move other than drop out of the game and pass
+    (sum(a[1:4,:]) > 0) && (a[5,:] .= false)
+
     v = net(state).data
     v[.!vec(a)] .= 0.0
-    if sum(v) == 0
-      print_state(state)
-    end
     v ./= sum(v)
+
+    r = rand()
     best_move = findfirst(x -> x > r, cumsum(v))
 
-    move_to = Move(mod(best_move,4))# ==0 ? 4 : mod(best_move,4)
-    pass_to = mod(best_move,4)==0 ? div(best_move,4) : div(best_move,4)+1
+    move_to = Move(mod(best_move,5))
+    pass_to = mod(best_move,5)==0 ? div(best_move,5) : div(best_move,5)+1
     (move_to, pass_to), best_move
 end
 
@@ -140,7 +141,7 @@ function execute!(state, a)
     end
 
     #check if stone is out of the game
-    if  state[active*2-1] ∈ [0; 6] || state[active*2] ∈ [0 4]
+    if  state[active*2-1] ∈ [0; 6] || state[active*2] ∈ [0 4] || a[1] == out
         state[(active*2-1):(active*2)] = [0;0]
         state[12+active] = -1
     end

@@ -24,24 +24,24 @@ end
 
 net_top = Chain(
   Dense(18, 100, relu),
-  Dense(100, 24),
+  Dense(100, 30),
   softmax)
 
 net_bot = Chain(
   Dense(18, 100, relu),
-  Dense(100, 24),
+  Dense(100, 30),
   softmax)
 
 
 function loss(state,action,reward)
     p_all = net_top(state')
-    p = sum(Flux.onehotbatch(action,collect(1:24)) .* p_all, 1)
+    p = sum(Flux.onehotbatch(action,collect(1:30)) .* p_all, 1)
     Flux.crossentropy(p, reward)
 end
 
 
 function train_hupo(net_top, net_bot)
-  numOfEpochs = 300
+  numOfEpochs = 100
   for epoch in 1:numOfEpochs
     st, rt, mt, sb, rb, mb = collectData(100, net_top, net_bot)
     println("Epoch: $(epoch) - average length of game is $(size(st,1)/100))")

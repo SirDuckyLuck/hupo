@@ -1,6 +1,6 @@
 # Hupo
 ### Rules
-http://www.deskovehry.info/pravidla/hupo.htm
+https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
@@ -17,12 +17,9 @@ Next three numbers are states for top player:
 
 Last three numbers are states for bottom player.
 #### Action (*Tuple of length 2*)
-Actions are coded with two numbers:
+Actions are coded with:
 ##### move_to
-1. 1 == move the stone top
-2. 2 == move the stone right
-3. 3 == move the stone bottom
-4. 4 == move the stone left
+Enum for where to move. "Out" if there is no plausible move.
 
 ##### pass_to
 Giving number of stone to whom to pass totem (1,2,3 are stones of top player, 4,5,6 are stones of bottom player).
