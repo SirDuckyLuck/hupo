@@ -1,37 +1,16 @@
-using Flux
-include("hupo.jl")
-
-function collectData(numOfGames, net_top, net_bot)
-  states_top = Array{Int}(undef,0,18)
-  rewards_top = Vector{Float64}()
-  move_top = Vector{Float64}()
-  states_bot = Array{Int}(undef,0,18)
-  rewards_bot = Vector{Float64}()
-  move_bot = Vector{Float64}()
-
-  for i in 1:numOfGames
-    st, rt, pt, sb, rb, pb = game(net_top, net_bot)
-    states_top = vcat(states_top,st)
-    states_bot = vcat(states_bot,sb)
-    rewards_top = vcat(rewards_top,rt)
-    rewards_bot = vcat(rewards_bot,rb)
-    move_top = vcat(move_top,pt)
-    move_bot = vcat(move_bot,pb)
-  end
-
-  states_top, rewards_top, move_top, states_bot, rewards_bot, move_bot
-end
+include("training_helpers.jl")
 
 net_top = Chain(
   Dense(18, 100, relu),
+  Dense(100, 100, relu),
   Dense(100, 30),
   softmax)
 
 net_bot = Chain(
   Dense(18, 100, relu),
+  Dense(100, 100, relu),
   Dense(100, 30),
   softmax)
-
 
 function loss(state,action,reward)
     p_all = net_top(state')
@@ -39,14 +18,19 @@ function loss(state,action,reward)
     Flux.crossentropy(p, reward)
 end
 
+global numOfEpochs = 1000
+global gamesPerEpoch = 20
 
 function train_hupo(net_top, net_bot)
-  numOfEpochs = 100
   for epoch in 1:numOfEpochs
-    st, rt, mt, sb, rb, mb = collectData(10, net_top, net_bot)
-    println("Epoch: $(epoch) - average length of game is $(size(st,1)/100))")
+    st, rt, mt, sb, rb, mb = collectData(gamesPerEpoch, net_top, net_bot)
+    println("Epoch: $(epoch) - average length of game is $(size(st,1)/gamesPerEpoch))")
     println("average reward for top player is $(mean(rt))")
-    println("loss is $(loss(st, mt, rt))")
+    println("loss is $(loss(st, mt, rt)/gamesPerEpoch)")
+
+    if !isnan(std(rt))
+      rt .= (rt .- mean(rt))./std(rt)
+    end
 
     data = Iterators.repeated((st, mt, rt), 1)
     opt = ADAM(Flux.params(net_top))

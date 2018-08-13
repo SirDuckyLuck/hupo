@@ -1,5 +1,6 @@
 include("UnicodeGrids.jl")
 using .UnicodeGrids
+using Statistics
 
 @enum Move up right down left out
 
@@ -87,7 +88,7 @@ function action(state, net)
             a[:,pass] .= false
         end
     end
-    
+
     # if there is a move other than drop out of the game and pass
     (sum(a[1:4,:]) > 0) && (a[5,:] .= false)
 
