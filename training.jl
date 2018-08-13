@@ -43,7 +43,7 @@ end
 function train_hupo(net_top, net_bot)
   numOfEpochs = 100
   for epoch in 1:numOfEpochs
-    st, rt, mt, sb, rb, mb = collectData(100, net_top, net_bot)
+    st, rt, mt, sb, rb, mb = collectData(10, net_top, net_bot)
     println("Epoch: $(epoch) - average length of game is $(size(st,1)/100))")
     println("average reward for top player is $(mean(rt))")
     println("loss is $(loss(st, mt, rt))")

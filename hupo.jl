@@ -1,9 +1,9 @@
 include("UnicodeGrids.jl")
 using .UnicodeGrids
 
-@enum Move top right bottom left out
+@enum Move up right down left out
 
-const d_moves = Dict(top => "↑", right => "→", bottom => "↓", left => "←", out => "~")
+const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
 
 "Clear `n` lines above cursor."
@@ -56,11 +56,11 @@ function action(state, net)
 
     for move in instances(Move)[1:4] # check moves plausibility except getting out
         new_position = copy(stone_position)
-        if move == top
+        if move == up
             new_position[1] -=1
         elseif move == right
             new_position[2] +=1
-        elseif move == bottom
+        elseif move == down
             new_position[1] +=1
         elseif move == left
             new_position[2] -=1
@@ -87,7 +87,7 @@ function action(state, net)
             a[:,pass] .= false
         end
     end
-
+    
     # if there is a move other than drop out of the game and pass
     (sum(a[1:4,:]) > 0) && (a[5,:] .= false)
 
@@ -98,8 +98,32 @@ function action(state, net)
     r = rand()
     best_move = findfirst(x -> x > r, cumsum(v))
 
-    move_to = Move(mod(best_move,5))
-    pass_to = mod(best_move,5)==0 ? div(best_move,5) : div(best_move,5)+1
+    if best_move ∈ 1:5:30
+      move_to = up
+    elseif best_move ∈ 2:5:30
+      move_to = right
+    elseif best_move ∈ 3:5:30
+      move_to = down
+    elseif best_move ∈ 4:5:30
+      move_to = left
+    else
+      move_to = out
+    end
+
+    if best_move ∈ 1:5
+      pass_to = 1
+    elseif best_move ∈ 6:10
+      pass_to = 2
+    elseif best_move ∈ 11:15
+      pass_to = 3
+    elseif best_move ∈ 16:20
+      pass_to = 4
+    elseif best_move ∈ 21:25
+      pass_to = 5
+    else
+      pass_to = 6
+    end
+
     (move_to, pass_to), best_move
 end
 
@@ -108,11 +132,11 @@ function execute!(state, a)
     active = findall(state[13:end] .== 2)[1]
 
     #move the stone
-    if a[1] == top
+    if a[1] == up
         state[active*2-1] -=1
     elseif a[1] == right
         state[active*2] +=1
-    elseif a[1] == bottom
+    elseif a[1] == down
         state[active*2-1] +=1
     elseif a[1] == left
         state[active*2] -=1
