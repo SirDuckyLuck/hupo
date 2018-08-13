@@ -1,7 +1,7 @@
 using Flux
 include("hupo.jl")
 
-function collectData(numOfGames, net_top, net_bot, exploration)
+function collectData(numOfGames, net_top, net_bot)
   states_top = Array{Int}(undef,0,18)
   rewards_top = Vector{Float64}()
   move_top = Vector{Float64}()
@@ -10,7 +10,7 @@ function collectData(numOfGames, net_top, net_bot, exploration)
   move_bot = Vector{Float64}()
 
   for i in 1:numOfGames
-    st, rt, pt, sb, rb, pb = game(net_top, net_bot, exploration)
+    st, rt, pt, sb, rb, pb = game(net_top, net_bot)
     states_top = vcat(states_top,st)
     states_bot = vcat(states_bot,sb)
     rewards_top = vcat(rewards_top,rt)
@@ -43,7 +43,7 @@ end
 function train_hupo(net_top, net_bot)
   numOfEpochs = 300
   for epoch in 1:numOfEpochs
-    st, rt, mt, sb, rb, mb = collectData(100, net_top, net_bot, 1. - epoch/numOfEpochs)
+    st, rt, mt, sb, rb, mb = collectData(100, net_top, net_bot)
     println("Epoch: $(epoch) - average length of game is $(size(st,1)/100))")
     println("average reward for top player is $(mean(rt))")
     println("loss is $(loss(st, mt, rt))")
