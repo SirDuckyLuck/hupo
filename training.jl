@@ -13,27 +13,27 @@ net_bot = Chain(
   softmax)
 
 function loss(state,action,reward)
-    p_all = net_top(state')
+    p_all = net_top(state)
     p = sum(Flux.onehotbatch(action,collect(1:30)) .* p_all, 1)
     Flux.crossentropy(p, reward)
 end
 
-global numOfEpochs = 10
+global numOfEpochs = 100
 global lengthOfBuffer = 500
 
 function train_hupo(net_top, net_bot)
   for epoch in 1:numOfEpochs
-    memory_buffer = memory_buffer(lengthOfBuffer)
-    collectData!(net_top, net_bot, memory_buffer)
-    println("Epoch: $(epoch) - average length of game is $(size(st,1)/gamesPerEpoch))")
-    println("average reward for top player is $(mean(rt))")
-    println("loss is $(loss(st, mt, rt)/gamesPerEpoch)")
+    mb = memory_buffer(lengthOfBuffer)
+    collectData!(net_top, net_bot, mb)
+    println("Epoch: $(epoch)")
+    println("Average reward for top player: $(mean(mb.rewards))")
+    println("Loss: $(loss(mb.states, mb.moves, mb.rewards)/lengthOfBuffer)")
 
-    if !isnan(std(rt))
-      rt .= (rt .- mean(rt))./std(rt)
+    if !isnan(std(mb.rewards))
+      mb.rewards .= (mb.rewards .- mean(mb.rewards))./std(mb.rewards)
     end
 
-    data = Iterators.repeated((st, mt, rt), 1)
+    data = Iterators.repeated((mb.states, mb.moves, mb.rewards), 1)
     opt = ADAM(Flux.params(net_top))
     Flux.train!(loss, data, opt)
   end

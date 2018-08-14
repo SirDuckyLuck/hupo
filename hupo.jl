@@ -199,22 +199,22 @@ function game!(net_top, net_bot, memory_buffer, k)
 
     while true
         a, move = active_player == "top" ? action(state, net_top) : action(state, net_bot)
-        won = execute!(state,a)
         if (active_player=="top") && (k <= memory_buffer.N)# collect data for top player
             memory_buffer.states[:,k] = state
             memory_buffer.moves[k] = move
+            k += 1
         end
+
+        won = execute!(state,a)
 
         if !(won=="")
-            (won=="top player won") && (memory_buffer.rewards[k_init:min(k,memory_buffer.N)] .+= 1)
-            (won=="bottom player won") && (memory_buffer.rewards[k_init:min(k,memory_buffer.N)] .-= 1)
-            break
+            (won=="top player won") && (memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= 1)
+            (won=="bottom player won") && (memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1)
+            return k
         end
-        (active_player == "top") && (k += 1)
+
         active_player = active_player == "top" ? "bottom" : "top"
     end
-
-    k
 end
 
 
