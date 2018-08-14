@@ -1,15 +1,13 @@
 include("training_helpers.jl")
 
 net_top = Chain(
-  Dense(18, 100, relu),
-  Dense(100, 100, relu),
-  Dense(100, 30),
+  Dense(18, 500, relu),
+  Dense(500, 500, relu),
+  Dense(500, 30),
   softmax)
 
 net_bot = Chain(
-  Dense(18, 100, relu),
-  Dense(100, 100, relu),
-  Dense(100, 30),
+  Dense(18, 30),
   softmax)
 
 function loss(states,actions,rewards)
@@ -18,8 +16,9 @@ function loss(states,actions,rewards)
     Flux.crossentropy(p, rewards)
 end
 
-global numOfEpochs = 100
-global lengthOfBuffer = 500
+global numOfEpochs = 1000
+global lengthOfBuffer = 1000
+global opt = ADAM(Flux.params(net_top))
 
 function train_hupo(net_top, net_bot)
   for epoch in 1:numOfEpochs
@@ -34,7 +33,7 @@ function train_hupo(net_top, net_bot)
     end
 
     data = Iterators.repeated((mb.states, mb.actions, mb.rewards), 1)
-    opt = ADAM(Flux.params(net_top))
+
     Flux.train!(loss, data, opt)
   end
 end

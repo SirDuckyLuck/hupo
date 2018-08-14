@@ -179,6 +179,7 @@ function execute!(state, a)
     if  state[active*2-1] ∈ [0; 6] || state[active*2] ∈ [0 4] || a[1] == out
         state[(active*2-1):(active*2)] = [0;0]
         state[12+active] = -1
+        (active == 2) && (won = "bot player lost a stone")
     end
 
     #check if anyone won
@@ -207,9 +208,16 @@ function game!(net_top, net_bot, memory_buffer, k)
 
         won = execute!(state,a)
 
-        if !(won=="")
-            (won=="top player won") && (memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= 1)
-            (won=="bottom player won") && (memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1)
+        if won ∈ ["top player won" "bot player lost a stone"]
+            memory_buffer.actions[k-1] += 5.
+        end
+
+        if won ∈ ["top player won" "bottom player won"]
+            if won=="top player won"
+                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= 1
+            else
+                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1)
+            end
             return k
         end
 
