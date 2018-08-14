@@ -209,14 +209,14 @@ function game!(net_top, net_bot, memory_buffer, k)
         won = execute!(state,a)
 
         if won ∈ ["top player won" "bot player lost a stone"]
-            memory_buffer.actions[k-1] += 5.
+            memory_buffer.rewards[k-1] += 5.
         end
 
         if won ∈ ["top player won" "bottom player won"]
             if won=="top player won"
                 memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= 1
             else
-                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1)
+                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1
             end
             return k
         end
