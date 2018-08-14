@@ -18,12 +18,13 @@ function loss(state,action,reward)
     Flux.crossentropy(p, reward)
 end
 
-global numOfEpochs = 1000
-global gamesPerEpoch = 20
+global numOfEpochs = 10
+global lengthOfBuffer = 500
 
 function train_hupo(net_top, net_bot)
   for epoch in 1:numOfEpochs
-    st, rt, mt, sb, rb, mb = collectData(gamesPerEpoch, net_top, net_bot)
+    memory_buffer = memory_buffer(lengthOfBuffer)
+    collectData!(net_top, net_bot, memory_buffer)
     println("Epoch: $(epoch) - average length of game is $(size(st,1)/gamesPerEpoch))")
     println("average reward for top player is $(mean(rt))")
     println("loss is $(loss(st, mt, rt)/gamesPerEpoch)")

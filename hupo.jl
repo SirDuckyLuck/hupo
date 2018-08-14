@@ -6,6 +6,16 @@ using Statistics
 
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
+mutable struct memory_buffer
+  N::Int
+  states::Array{Int}
+  rewards::Vector{Float64}
+  moves::Vector{Float64}
+end
+
+function memory_buffer(N::Int)
+  memory_buffer(N, Array{Int}(undef,18,N), zeros(N), Vector{Float64}(N))
+end
 
 "Clear `n` lines above cursor."
 function clear(n::Int)
@@ -181,40 +191,30 @@ function execute!(state, a)
     won
 end
 
-function game(net_top, net_bot)
-    states_top = Array{Int}(undef,0,18)
-    rewards_top = Vector{Float64}()
-    move_top = Vector{Float64}()
-    states_bot = Array{Int}(undef,0,18)
-    rewards_bot = Vector{Float64}()
-    move_bot = Vector{Float64}()
-
+function game!(net_top, net_bot, memory_buffer, k)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
+    k_init = copy(k)
 
     while true
-        a, p = active_player == "top" ? action(state, net_top) : action(state, net_bot)
+        a, move = active_player == "top" ? action(state, net_top) : action(state, net_bot)
         won = execute!(state,a)
-        if active_player=="top"
-            states_top = vcat(states_top,deepcopy(state)')
-            push!(rewards_top, 0.)
-            push!(move_top, p)
-        else
-            states_bot = vcat(states_bot,deepcopy(state)')
-            push!(rewards_bot, 0.)
-            push!(move_bot, p)
+        if (active_player=="top") && (k <= memory_buffer.N)# collect data for top player
+            memory_buffer.states[:,k] = state
+            memory_buffer.moves[k] = move
         end
 
         if !(won=="")
-            (won=="top player won") && (rewards_top .+= 1; rewards_bot .-= 1)
-            (won=="bottom player won") && (rewards_top .-= 1; rewards_bot .+= 1)
+            (won=="top player won") && (memory_buffer.rewards[k_init:min(k,memory_buffer.N)] .+= 1)
+            (won=="bottom player won") && (memory_buffer.rewards[k_init:min(k,memory_buffer.N)] .-= 1)
             break
         end
+        (active_player == "top") && (k += 1)
         active_player = active_player == "top" ? "bottom" : "top"
     end
 
-    states_top, rewards_top, move_top, states_bot, rewards_bot, move_bot
+    k
 end
 
 
