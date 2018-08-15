@@ -1,63 +1,22 @@
 include("UnicodeGrids.jl")
+include("printing.jl")
+include("collectingData.jl")
 using .UnicodeGrids
 using Statistics
+using Flux
 
 @enum Move up right down left out
 
-const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
-
-mutable struct memory_buffer
-  N::Int
-  states::Array{Int}
-  actions::Vector{Float64}
-  rewards::Vector{Float64}
-end
-
-function memory_buffer(N::Int)
-  memory_buffer(N, Array{Int}(undef,18,N), zeros(N), zeros(N))
-end
-
-"Clear `n` lines above cursor."
-function clear(n::Int)
-    println("\033[$(n)A" * "\033[K\n" ^ n * "\033[$(n)A")
-end
 
 function get_player_with_token(state)
     findfirst(state[13:end], 2)
 end
 
+
 function fill_state_beginning!(state)
     state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
 end
 
-function print_state(state::Array{Int})
-    M = fill(" ", 5, 3)
-    M[3,2] = "x"
-    for i in 1:6
-        state[12+i] == -1 && continue
-        c = string(i)
-        state[12+i] == 1 && (c = aesRed * c * aesClear)
-        state[12+i] == 2 && (c = aesBold * aesYellow * c * aesClear)
-        id = i*2-1
-        M[state[id],state[id+1]] = c
-    end
-    print_grid(M)
-end
-
-function print_state(state::Array{Int}, pos, arrow)
-    M = fill(" ", 5, 3)
-    M[3,2] = "x"
-    M[pos[1], pos[2]] = arrow
-    for i in 1:6
-        state[12+i] == -1 && continue
-        c = string(i)
-        state[12+i] == 1 && (c = aesRed * c * aesClear)
-        state[12+i] == 2 && (c = aesBold * aesYellow * c * aesClear)
-        id = i*2-1
-        M[state[id],state[id+1]] = c
-    end
-    print_grid(M)
-end
 
 function action(state, net)
     a = Array{Bool}(undef,5,6) # which direction, #whom to pass
@@ -109,34 +68,40 @@ function action(state, net)
     r = rand()
     best_move = findfirst(x -> x > r, cumsum(v))
 
-    if best_move ∈ 1:5:30
-      move_to = up
-    elseif best_move ∈ 2:5:30
-      move_to = right
-    elseif best_move ∈ 3:5:30
-      move_to = down
-    elseif best_move ∈ 4:5:30
-      move_to = left
-    else
-      move_to = out
-    end
-
-    if best_move ∈ 1:5
-      pass_to = 1
-    elseif best_move ∈ 6:10
-      pass_to = 2
-    elseif best_move ∈ 11:15
-      pass_to = 3
-    elseif best_move ∈ 16:20
-      pass_to = 4
-    elseif best_move ∈ 21:25
-      pass_to = 5
-    else
-      pass_to = 6
-    end
-
-    (move_to, pass_to), best_move
+    translateMove(best_move), best_move
 end
+
+
+function translateMove(idx)
+  if idx ∈ 1:5:30
+    move_to = up
+  elseif idx ∈ 2:5:30
+    move_to = right
+  elseif idx ∈ 3:5:30
+    move_to = down
+  elseif idx ∈ 4:5:30
+    move_to = left
+  else
+    move_to = out
+  end
+
+  if idx ∈ 1:5
+    pass_to = 1
+  elseif idx ∈ 6:10
+    pass_to = 2
+  elseif idx ∈ 11:15
+    pass_to = 3
+  elseif idx ∈ 16:20
+    pass_to = 4
+  elseif idx ∈ 21:25
+    pass_to = 5
+  else
+    pass_to = 6
+  end
+
+  move_to, pass_to
+end
+
 
 function execute!(state, a)
     won = ""
@@ -192,69 +157,21 @@ function execute!(state, a)
     won
 end
 
-function game!(net_top, net_bot, memory_buffer, k)
+
+function game(net_top, net_bot)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
-    k_init = copy(k)
 
     while true
         a, a_idx = active_player == "top" ? action(state, net_top) : action(state, net_bot)
-        if (active_player=="top") && (k <= memory_buffer.N)# collect data for top player
-            memory_buffer.states[:,k] = state
-            memory_buffer.actions[k] = a_idx
-            k += 1
-        end
 
         won = execute!(state,a)
 
-        if won ∈ ["top player won" "bot player lost a stone"]
-            memory_buffer.rewards[k-1] += 5.
-        end
-
         if won ∈ ["top player won" "bottom player won"]
-            if won=="top player won"
-                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= 1
-            else
-                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1
-            end
-            return k
+            return won
         end
 
         active_player = active_player == "top" ? "bottom" : "top"
-    end
-end
-
-
-function game_show(net_top, net_bot)
-    state = Array{Int}(undef,6*2+6)
-    fill_state_beginning!(state)
-    active_player = "top"
-    round_number = 1
-
-    println()
-    println("Round $(round_number)")
-    print_state(state)
-    println("press <Enter>")
-
-    while true
-        readline()
-        clear(15)
-
-        idx = get_player_with_token(state)
-        pos = (state[2*idx - 1], state[2*idx])
-        a, p = active_player == "top" ? action(state, net_top) : action(state, net_bot)
-        won = execute!(state, a)
-
-        println("Round $(round_number)")
-        print_state(state, pos, d_moves[a[1]])
-        println("player $idx moves $(d_moves[a[1]])  and passes token to player $(a[2])")
-
-        if !(won=="")
-            println(won)
-            break
-        end
-        active_player = active_player == "top" ? "bottom" : "top"
-        round_number += 1
     end
 end

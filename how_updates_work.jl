@@ -81,3 +81,25 @@ probs[2][3]-probs[1][3]
 #it is not equally distributed
 
 #check other optimizers and batches of data
+
+################################################
+net_top = Chain(
+  Dense(18, 500, relu),
+  Dense(500, 500, relu),
+  Dense(500, 30),
+  softmax)
+opt = ADAM(Flux.params(net_top))
+
+state = [1; 1; 4; 1; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
+print_state(state)
+
+print_action_probs(state)
+translateMove(7)
+t = state,[7],[+1.]
+loss(t[1],t[2],t[3])
+net_top(state).data[7]
+data = Iterators.repeated((t[1],t[2],t[3]), 1)
+Flux.train!(loss, data, opt)
+loss(t[1],t[2],t[3])
+net_top(state).data[7]
+print_action_probs(state)
