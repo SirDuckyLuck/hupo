@@ -1,8 +1,8 @@
 include("hupo.jl")
 
 net_top = Chain(
-  Dense(18, 500, relu),
-  Dense(500, 100, relu),
+  Dense(18, 100, relu),
+  Dense(100, 100, relu),
   Dense(100, 30),
   softmax)
 
@@ -16,7 +16,7 @@ function loss(states,actions,rewards)
     Flux.crossentropy(p, rewards)
 end
 
-global numOfEpochs = 10001
+global numOfEpochs = 1001
 global lengthOfBuffer = 400
 global r_end = 1.
 global r_add = 5.
@@ -40,6 +40,7 @@ function train_hupo!(net_top)
 
     data = Iterators.repeated((mb.states, mb.actions, mb.rewards), 1)
 
+    opt = ADAM(Flux.params(net_top))
     Flux.train!(loss, data, opt)
 
     # survival of the fittest
@@ -50,8 +51,11 @@ function train_hupo!(net_top)
       println("Epoch: $(epoch), candidate won $candidate_wins")
       if candidate_wins > 50
         net_top = deepcopy(candidate)
-        opt = ADAM(Flux.params(net_top))
       end
+
+      # safety check --- the probability of going right should rise
+      known_state = [1; 1; 4; 1; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
+      println(sum(net_top(known_state).data[2:5:30]))
     end
     #check against random net
     if (epoch % 1001 == 0)
@@ -62,8 +66,5 @@ function train_hupo!(net_top)
   end
 end
 
-
 train_hupo!(net_top)
-
-
 # game_show(net_top, net_bot)
