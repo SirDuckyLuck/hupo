@@ -10,7 +10,7 @@ function memory_buffer(N::Int)
 end
 
 
-function game!(net_top, net_bot, memory_buffer, k)
+function game!(net_top, net_bot, memory_buffer, k,  r_end = 1., r_add = 5., discount = 0.8)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
@@ -27,14 +27,15 @@ function game!(net_top, net_bot, memory_buffer, k)
         won = execute!(state,a)
 
         if won ∈ ["top player won" "bot player lost a stone"]
-            memory_buffer.rewards[k-1] += 5.
+            memory_buffer.rewards[k-1] += r_add
         end
 
         if won ∈ ["top player won" "bottom player won"]
+            reward = [r_end.^collect((length(k_init:min(k - 1,memory_buffer.N))-1):-1:1); r_end]
             if won=="top player won"
-                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= 1
+                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .+= reward
             else
-                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= 1
+                memory_buffer.rewards[k_init:min(k - 1,memory_buffer.N)] .-= reward
             end
             return k
         end
@@ -44,9 +45,9 @@ function game!(net_top, net_bot, memory_buffer, k)
 end
 
 
-function collectData!(net_top, net_bot, memory_buffer)
+function collectData!(net_top, net_bot, memory_buffer, r_end = 1., r_add = 5., discount = 0.8)
   k = 1
   while k <= memory_buffer.N
-    k = game!(net_top, net_bot, memory_buffer, k)
+    k = game!(net_top, net_bot, memory_buffer, k, r_end, r_add, discount)
   end
 end
