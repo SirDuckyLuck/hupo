@@ -18,88 +18,60 @@ function fill_state_beginning!(state)
 end
 
 
-function action(state, net)
-    a = Array{Bool}(undef,5,6) # which direction, #whom to pass
-    fill!(a,true)
-    active = findall(state[13:end] .== 2)
-    stone_position = [state[active*2 .- 1];state[active*2]]
+function action(state, net_move, net_pass)
+  active = findall(state[13:end] .== 2)
+  stone_position = [state[active*2 .- 1];state[active*2]]
 
-    for move in instances(Move)[1:4] # check moves plausibility except getting out
-        new_position = copy(stone_position)
-        if move == up
-            new_position[1] -=1
-        elseif move == right
-            new_position[2] +=1
-        elseif move == down
-            new_position[1] +=1
-        elseif move == left
-            new_position[2] -=1
-        end
+  p = net_move(state).data
 
-        # check for middle
-        if new_position == [3; 2]
-            a[Int(move)+1,:] .= false
-        end
-        # check if there is another stone
-        for stone in 1:6
-            if new_position == state[stone*2-1:stone*2]
-                a[Int(move)+1,:] .= false
-            end
-        end
-        # check if out of the board
-        if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
-            a[Int(move)+1,:] .= false
-        end
-    end
+  for move in instances(Move)[1:4] # check moves plausibility except getting out
+      new_position = copy(stone_position)
+      if move == up
+          new_position[1] -=1
+      elseif move == right
+          new_position[2] +=1
+      elseif move == down
+          new_position[1] +=1
+      elseif move == left
+          new_position[2] -=1
+      end
 
-    for pass in 1:6 # check passing plausibility
-        if state[12+pass] !=0
-            a[:,pass] .= false
-        end
-    end
-
-    # if there is a move other than drop out of the game and pass
-    (sum(a[1:4,:]) > 0) && (a[5,:] .= false)
-
-    v = net(state).data
-    v[.!vec(a)] .= 0.0
-    v ./= sum(v)
-
-    r = rand()
-    best_move = findfirst(x -> x > r, cumsum(v))
-
-    translateMove(best_move), best_move
-end
-
-
-function translateMove(idx)
-  if idx ∈ 1:5:30
-    move_to = up
-  elseif idx ∈ 2:5:30
-    move_to = right
-  elseif idx ∈ 3:5:30
-    move_to = down
-  elseif idx ∈ 4:5:30
-    move_to = left
-  else
-    move_to = out
+      # check for middle
+      if new_position == [3; 2]
+          p[Int(move)+1] = 0.
+      end
+      # check if there is another stone
+      for stone in 1:6
+          if new_position == state[stone*2-1:stone*2]
+              p[Int(move)+1] = 0.
+          end
+      end
+      # check if out of the board
+      if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
+          p[Int(move)+1] = 0.
+      end
   end
 
-  if idx ∈ 1:5
-    pass_to = 1
-  elseif idx ∈ 6:10
-    pass_to = 2
-  elseif idx ∈ 11:15
-    pass_to = 3
-  elseif idx ∈ 16:20
-    pass_to = 4
-  elseif idx ∈ 21:25
-    pass_to = 5
-  else
-    pass_to = 6
+  (sum(p[1:4]) > 0.) && (p[5] = 0.) # if you can do something else than get kicked, do
+  p ./= sum(p)
+  r = rand()
+  move = Move(findfirst(x -> x >= r, cumsum(p)) - 1)
+  ################
+
+  p = net_pass(state).data
+
+  for pass in 1:6 # check passing plausibility
+      if state[12+pass] !=0
+          p[pass] = 0.
+      end
   end
 
-  move_to, pass_to
+  p ./= sum(p)
+
+  r = rand()
+  pass = findfirst(x -> x >= r, cumsum(p))
+
+  move, pass
 end
 
 
@@ -154,24 +126,28 @@ function execute!(state, a)
         won = "bottom player won"
     end
 
-    won
+    if findall(state[13:end] .== 2)[1] ∈ [1;2;3]
+      active_player = "top"
+    else
+      active_player = "bot"
+    end
+
+    won, active_player
 end
 
 
-function game(net_top, net_bot)
+function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
 
     while true
-        a, a_idx = active_player == "top" ? action(state, net_top) : action(state, net_bot)
+        a = active_player == "top" ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
 
-        won = execute!(state,a)
+        won, active_player = execute!(state,a)
 
         if won ∈ ["top player won" "bottom player won"]
             return won
         end
-
-        active_player = active_player == "top" ? "bottom" : "top"
     end
 end
