@@ -27,11 +27,11 @@ global net_bot_move = Chain(
 global net_bot_pass = Chain(
   Dense(18, 6),
   softmax)
-global numOfEpochs = 10000
+global numOfEpochs = 1000
 global lengthOfBuffer = 300
 global r_end = 1.
-global r_add = 0.
-global discount = 0.9
+global r_add = 1.
+global discount = 0.75
 global opt_move = SGD(Flux.params(net_top_move), 0.0001)
 global opt_pass = SGD(Flux.params(net_top_pass), 0.0001)
 
@@ -57,4 +57,4 @@ function train_hupo!()
 end
 
 train_hupo!()
-game_show(net_top, net_bot)
+game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)

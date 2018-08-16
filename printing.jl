@@ -1,7 +1,7 @@
 @enum Move up right down left out
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
-function game_show(net_top, net_bot)
+function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
@@ -18,18 +18,17 @@ function game_show(net_top, net_bot)
 
         idx = get_player_with_token(state)
         pos = (state[2*idx - 1], state[2*idx])
-        a, p = active_player == "top" ? action(state, net_top) : action(state, net_bot)
-        won = execute!(state, a)
+        a = active_player == "top" ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
+        won, active_player = execute!(state, a)
 
         println("Round $(round_number)")
         print_state(state, pos, d_moves[a[1]])
         println("player $idx moves $(d_moves[a[1]])  and passes token to player $(a[2])")
 
-        if !(won=="")
+        if won ∈ ["top player won" "bottom player won"]
             println(won)
             break
         end
-        active_player = active_player == "top" ? "bottom" : "top"
         round_number += 1
     end
 end
@@ -69,12 +68,4 @@ end
 "Clear `n` lines above cursor."
 function clear(n::Int)
     println("\033[$(n)A" * "\033[K\n" ^ n * "\033[$(n)A")
-end
-
-
-function print_action_probs(state)
-  p = net_top(state).data
-  order = sortperm(p)
-  actions = translateMove.(1:30)
-  println.(string.(actions[order]) .* " " .* string.(p[order]))
 end
