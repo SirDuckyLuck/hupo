@@ -1,6 +1,6 @@
 mutable struct memory_buffer
   N::Int
-  states::Array{Int}
+  states::Array{Float64,2}
   moves::Vector{Float64}
   passes::Vector{Float64}
   rewards::Vector{Float64}
@@ -54,8 +54,5 @@ function collectData!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
     k = game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass, mb, k, r_end, r_add, discount)
   end
 
-  data = Iterators.repeated((mb.states,
-                             mb.moves,
-                             mb.passes,
-                             (mb.rewards .- mean(mb.rewards))./std(mb.rewards)), 1)
+  data = mb.states, mb.moves, mb.passes, (mb.rewards .- mean(mb.rewards))./std(mb.rewards)
 end
