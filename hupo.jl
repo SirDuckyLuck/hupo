@@ -22,7 +22,7 @@ function action(state, net_move, net_pass)
   active = findall(state[13:end] .== 2)
   stone_position = [state[active*2 .- 1];state[active*2]]
 
-  p = net_move(state).data
+  p = net_move(state).data .+ 1e-6
 
   for move in instances(Move)[1:4] # check moves plausibility except getting out
       new_position = copy(stone_position)
@@ -58,10 +58,10 @@ function action(state, net_move, net_pass)
   move = Move(findfirst(x -> x >= r, cumsum(p)) - 1)
   ################
 
-  p = net_pass(state).data
+  p = net_pass(state).data .+ 1e-6
 
   for pass in 1:6 # check passing plausibility
-      if state[12+pass] !=0
+      if state[12+pass] != 0.
           p[pass] = 0.
       end
   end

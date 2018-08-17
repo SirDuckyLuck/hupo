@@ -12,11 +12,12 @@ end
 
 
 function game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
-               mb, k,  r_end = 1., r_add = 5., discount = 0.8)
+               mb, k,  r_end = 1., r_add = 5., discount = 0.8, length_of_game_tolerance = 500)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = "top"
     k_init = copy(k)
+    won = ""
 
     while true
         a = active_player == "top" ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
@@ -28,6 +29,9 @@ function game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
         end
 
         won, active_player = execute!(state,a)
+        if k - k_init > length_of_game_tolerance
+          won = "bottom player won"
+        end
 
         if won ∈ ["top player won" "bot player lost a stone"]
             mb.rewards[k-1] += r_add
@@ -47,11 +51,11 @@ end
 
 
 function collectData!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
-                      lengthOfBuffer, r_end, r_add, discount)
+                      lengthOfBuffer, r_end, r_add, discount, length_of_game_tolerance)
   mb = memory_buffer(lengthOfBuffer)
   k = 1
   while k <= mb.N
-    k = game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass, mb, k, r_end, r_add, discount)
+    k = game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass, mb, k, r_end, r_add, discount, length_of_game_tolerance)
   end
 
   data = mb.states, mb.moves, mb.passes, (mb.rewards .- mean(mb.rewards))./std(mb.rewards)
