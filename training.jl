@@ -30,12 +30,12 @@ global net_bot_pass = Chain(
   Dense(18, 6),
   softmax)
 global numOfEpochs = 10000
-global lengthOfBuffer = 300
+global lengthOfBuffer = 500
 global r_end = 1.
 global r_add = 1.
-global discount = 0.75
+global discount = 0.95
 global learning_rate = 1e-5
-global length_of_game_tolerance = 100
+global length_of_game_tolerance = 50
 global opt_move = SGD(Flux.params(net_top_move), learning_rate)
 global opt_pass = SGD(Flux.params(net_top_pass), learning_rate)
 
@@ -50,7 +50,11 @@ function train_hupo!()
 
     if (epoch % 100 == 0)
       known_state = [1; 1; 4; 1; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
-      println("Safety check: $(net_top_move(known_state).data)")
+      n1 = net_top_move(known_state).data
+      println("Safety check moving: $(n1) which is $(n1[2]/(n1[1] + n1[2])*100) %")
+      known_state = [1; 1; 1; 2; 1; 3; 5; 1; 4; 1; 5; 2; 1; 2; 1; 0; 0; 0]
+      n2 = net_top_pass(known_state).data
+      println("Safety check passing: $(n2) which is $(n2[4]/(n2[4] + n2[5] + n2[6])*100) %")
     end
 
     #check against random net
