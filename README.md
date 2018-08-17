@@ -1,6 +1,10 @@
 # Hupo
 ### Rules
 https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf
+but slightly different
+
+### Inspiration
+http://karpathy.github.io/2016/05/31/rl/
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
