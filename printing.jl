@@ -1,10 +1,11 @@
-@enum Move up right down left out
+@enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
 function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
     active_player = :top
+    active_stone = 2
     round_number = 1
 
     println()
@@ -18,12 +19,16 @@ function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
 
         idx = get_player_with_token(state)
         pos = (state[2*idx - 1], state[2*idx])
-        a = active_player == :top ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
-        won, active_player = execute!(state, a)
+
+        move = active_player == :top ? sample_move(state, active_stone, net_top_move) : sample_move(state, active_stone, net_bot_move)
+        active_stone = apply_move!(state, active_stone, move)
+        pass = active_player == :top ? sample_pass(state, active_stone, net_top_pass) : sample_pass(state, active_stone, net_bot_pass)
+        active_stone = apply_pass!(state, active_stone, pass)
+        won, active_player = check_state(state, active_stone)
 
         println("Round $(round_number)")
-        print_state(state, pos, d_moves[a[1]])
-        println("player $idx moves $(d_moves[a[1]])  and passes token to player $(a[2])")
+        print_state(state, pos, d_moves[move])
+        println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
 
         if won ∈ (:top_player_won, :bottom_player_won)
             println(won)
