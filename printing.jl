@@ -27,7 +27,7 @@ function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
         won, active_player = check_state(state, active_stone)
 
         println("Round $(round_number)")
-        print_state(state, pos, d_moves[move])
+        print_state(state)
         println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
 
         if won ∈ (:top_player_won, :bottom_player_won)
@@ -36,22 +36,6 @@ function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
         end
         round_number += 1
     end
-end
-
-
-function print_state(state::Array{Int}, pos, arrow)
-    M = fill(" ", 5, 3)
-    M[3,2] = "x"
-    M[pos[1], pos[2]] = arrow
-    for i in 1:6
-        state[12+i] == -1 && continue
-        c = string(i)
-        state[12+i] == 1 && (c = aesRed * c * aesClear)
-        state[12+i] == 2 && (c = aesBold * aesYellow * c * aesClear)
-        id = i*2-1
-        M[state[id],state[id+1]] = c
-    end
-    print_grid(M)
 end
 
 
