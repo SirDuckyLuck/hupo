@@ -17,7 +17,7 @@ function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
         readline()
         clear(15)
 
-        idx = get_player_with_token(state)
+        idx = get_active_stone(state)
         pos = (state[2*idx - 1], state[2*idx])
 
         move = active_player == :top ? sample_move(state, active_stone, net_top_move) : sample_move(state, active_stone, net_bot_move)
