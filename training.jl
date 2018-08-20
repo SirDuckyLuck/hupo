@@ -6,6 +6,8 @@ const r_end = 1.
 const discount = 0.95
 const learning_rate = 1e-5
 const length_of_game_tolerance = 50
+const minP = 1e-6
+const maxP = 1-minP
 
 const net_top_move = Chain(
     Dense(18, 100, relu),
@@ -24,12 +26,20 @@ include("setParams.jl")
 
 function loss_move(state, move, reward)
     p = net_top_move(state)[move]
-    -log(p) * reward
+    if minP < p < maxP
+      -log(p) * reward
+    else
+      0p
+    end
 end
 
 function loss_pass(state, pass, reward)
     p = net_top_pass(state)[pass]
-    -log(p) * reward
+    if minP < p < maxP
+      -log(p) * reward
+    else
+      0p
+    end
 end
 
 
