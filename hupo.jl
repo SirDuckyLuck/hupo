@@ -8,10 +8,8 @@ using Flux
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 
 
-function get_player_with_token(state)
-  findfirst(state[13:end], 2)
-end
-
+get_active_stone(state) = findfirst(view(state, 13:18), 2)
+get_active_player(active_stone) = active_stone ∈ (1, 2, 3) ? :top : :bot
 
 function fill_state_beginning!(state)
   state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
@@ -92,26 +90,15 @@ function apply_move!(state, active_stone, move)
 end
 
 function apply_pass!(state, active_stone, pass)
-  state[12 + pass] = 2
-  if active_stone ∈ [1 2 3] && pass ∈ [1 2 3]
-      state[12 + active_stone] = 1
-  elseif active_stone ∈ [1 2 3] && pass ∈ [4 5 6]
-      state[12 + active_stone] != -1 && (state[12 + active_stone] = 0)
-      for s in 13:18
-          if state[s] == 1
-              state[s] = 0
-          end
+  state[12 + active_stone] != -1 && (state[12 + active_stone] = 1)
+  if get_active_player(active_stone) != get_active_player(pass)
+    for s in 13:18
+      if state[s] == 1
+        state[s] = 0
       end
-  elseif active_stone ∈ [4 5 6] && pass ∈ [4 5 6]
-      state[12 + active_stone] = 1
-  elseif active_stone ∈ [4 5 6] && pass ∈ [1 2 3]
-      state[12 + active_stone] != -1 && (state[12 + active_stone] = 0)
-      for s in 13:18
-          if state[s] == 1
-              state[s] = 0
-          end
-      end
+    end
   end
+  state[12 + pass] = 2
 
   pass
 end
@@ -126,11 +113,7 @@ function check_state(state, active_stone)
       won = :bottom_player_won
   end
 
-  if active_stone ∈ [1;2;3]
-    active_player = :top
-  else
-    active_player = :bot
-  end
+  active_player = get_active_player(active_stone)
 
   won, active_player
 end
