@@ -76,7 +76,7 @@ end
 
 
 function execute!(state, a)
-    won = ""
+    won = Symbol()
     active = findall(state[13:end] .== 2)[1]
 
     #move the stone
@@ -116,20 +116,20 @@ function execute!(state, a)
     if  state[active*2-1] ∈ [0; 6] || state[active*2] ∈ [0 4] || a[1] == out
         state[(active*2-1):(active*2)] = [0;0]
         state[12+active] = -1
-        (active == 2) && (won = "bot player lost a stone")
+        (active == 2) && (won = :bot_player_lost_a_stone)
     end
 
     #check if anyone won
     if state[1:2] == [4;2] || state[3:4] == [4;2] || state[5:6] == [4;2] || state[16:18] == [-1; -1; -1]
-        won = "top player won"
+        won = :top_player_won
     elseif state[7:8] == [2;2] || state[9:10] == [2;2] || state[11:12] == [2;2] || state[13:15] == [-1; -1; -1]
-        won = "bottom player won"
+        won = :bottom_player_won
     end
 
     if findall(state[13:end] .== 2)[1] ∈ [1;2;3]
-      active_player = "top"
+      active_player = :top
     else
-      active_player = "bot"
+      active_player = :bot
     end
 
     won, active_player
@@ -139,14 +139,14 @@ end
 function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
-    active_player = "top"
+    active_player = :top
 
     while true
-        a = active_player == "top" ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
+        a = active_player == :top ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
 
         won, active_player = execute!(state,a)
 
-        if won ∈ ["top player won" "bottom player won"]
+        if won ∈ [:top_player_won :bottom_player_won]
             return won
         end
     end

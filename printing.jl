@@ -4,7 +4,7 @@ const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", 
 function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     state = Array{Int}(undef,6*2+6)
     fill_state_beginning!(state)
-    active_player = "top"
+    active_player = :top
     round_number = 1
 
     println()
@@ -18,14 +18,14 @@ function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
 
         idx = get_player_with_token(state)
         pos = (state[2*idx - 1], state[2*idx])
-        a = active_player == "top" ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
+        a = active_player == :top ? action(state, net_top_move, net_top_pass) : action(state, net_bot_move, net_bot_pass)
         won, active_player = execute!(state, a)
 
         println("Round $(round_number)")
         print_state(state, pos, d_moves[a[1]])
         println("player $idx moves $(d_moves[a[1]])  and passes token to player $(a[2])")
 
-        if won ∈ ["top player won" "bottom player won"]
+        if won ∈ (:top_player_won, :bottom_player_won)
             println(won)
             break
         end
