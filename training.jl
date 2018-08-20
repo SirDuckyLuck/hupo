@@ -1,6 +1,6 @@
 include("hupo.jl")
 
-const numOfEpochs = 10000
+numOfEpochs = 10 ^ 6
 const lengthOfBuffer = 500
 const r_end = 1.
 const discount = 0.95
@@ -43,11 +43,21 @@ function loss_pass(state, pass, reward)
 end
 
 
+function signal_handler(sig::Cint)::Void
+    global numOfEpochs = 0
+    return
+end
+signal_handler_c = cfunction(signal_handler, Void, (Cint,))
+ccall(:signal, Cint, (Cint, Ptr{Void}), 2, signal_handler_c)
+
+
 function train_hupo!()
   opt_move = SGD(Flux.params(net_top_move), learning_rate)
   opt_pass = SGD(Flux.params(net_top_pass), learning_rate)
 
-  for epoch in 1:numOfEpochs
+  epoch = 0
+  while epoch < numOfEpochs
+    epoch += 1
     data = collectData(net_top_move, net_top_pass, net_bot_move, net_bot_pass, lengthOfBuffer, r_end, discount, length_of_game_tolerance)
 
     for i in 1:lengthOfBuffer
