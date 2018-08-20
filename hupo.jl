@@ -96,7 +96,7 @@ function apply_pass!(state, active_stone, pass)
   if active_stone ∈ [1 2 3] && pass ∈ [1 2 3]
       state[12 + active_stone] = 1
   elseif active_stone ∈ [1 2 3] && pass ∈ [4 5 6]
-      state[12 + active_stone] = 0
+      state[12 + active_stone] != -1 && (state[12 + active_stone] = 0)
       for s in 13:18
           if state[s] == 1
               state[s] = 0
@@ -105,7 +105,7 @@ function apply_pass!(state, active_stone, pass)
   elseif active_stone ∈ [4 5 6] && pass ∈ [4 5 6]
       state[12 + active_stone] = 1
   elseif active_stone ∈ [4 5 6] && pass ∈ [1 2 3]
-      state[12 + active_stone] = 0
+      state[12 + active_stone] != -1 && (state[12 + active_stone] = 0)
       for s in 13:18
           if state[s] == 1
               state[s] = 0
