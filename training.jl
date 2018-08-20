@@ -19,6 +19,7 @@ const net_top_pass = Chain(
     softmax)
 const net_bot_move(x) = softmax(param(ones(5, 18)) * x)
 const net_bot_pass(x) = softmax(param(ones(6, 18)) * x)
+include("setParams.jl")
 
 
 function loss_move(state, move, reward)
