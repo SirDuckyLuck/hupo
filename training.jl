@@ -1,23 +1,23 @@
 include("hupo.jl")
 
 numOfEpochs = 10 ^ 6
-const lengthOfBuffer = 1000
+const lengthOfBuffer = 300
 const r_end = 1.
 const discount = 0.99
 const learning_rate = 1e-4
 const length_of_game_tolerance = 1001
-const minP = 0.05
+const minP = 0.10
 const maxP = 1-minP
 
 const net_top_move = Chain(
-    Dense(18, 20, relu),
-    Dense(20, 20, relu),
+    Dense(18, 100, relu),
+    Dense(100, 20, relu),
     Dense(20, 20, relu),
     Dense(20, 4),
     softmax)
 const net_top_pass = Chain(
-    Dense(18, 20, relu),
-    Dense(20, 20, relu),
+    Dense(18, 100, relu),
+    Dense(100, 20, relu),
     Dense(20, 20, relu),
     Dense(20, 6),
     softmax)
