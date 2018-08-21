@@ -23,7 +23,7 @@ const net_top_pass = Chain(
     softmax)
 const net_bot_move(x) = softmax(param(ones(4, 18)) * x)
 const net_bot_pass(x) = softmax(param(ones(6, 18)) * x)
-include("setParams.jl")
+# include("setParams.jl")
 
 
 function loss_move(state, move, reward)
@@ -71,7 +71,7 @@ function train_hupo!()
       println("$epoch")
       known_state = [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
       n0 = net_top_move(known_state).data
-      println("Safety check moving from start: $(n0) %")
+      println("Safety check moving from start: $(n0)")
       known_state = [1; 1; 4; 1; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
       n1 = net_top_move(known_state).data
       println("Safety check moving: $(n1) which is $(n1[2]/(n1[1] + n1[2])*100) %")
