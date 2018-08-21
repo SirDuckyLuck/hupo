@@ -49,7 +49,7 @@ function sample_move(state, active_stone, net_move)
     end
   end
 
-  (sum(p[1:4]) > 0.) && (p[5] = 0.) # if you can do something else than get kicked, do
+  (all(p .== 0.)) && (return out) # if you can do something else than get kicked, do
   p ./= sum(p)
   r = rand()
   move = Move(findfirst(x -> x >= r, cumsum(p)))
@@ -124,8 +124,11 @@ function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     fill_state_beginning!(state)
     active_player = :top
     active_stone = 2
+    game_length = 0
 
     while true
+      game_length += 1
+
       move = active_player == :top ? sample_move(state, active_stone, net_top_move) : sample_move(state, active_stone, net_bot_move)
       active_stone = apply_move!(state, active_stone, move)
       pass = active_player == :top ? sample_pass(state, active_stone, net_top_pass) : sample_pass(state, active_stone, net_bot_pass)
@@ -133,7 +136,7 @@ function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
       won, active_player = check_state(state, active_stone)
 
       if won ∈ [:top_player_won :bottom_player_won]
-          return won
+          return won, game_length
       end
     end
 end

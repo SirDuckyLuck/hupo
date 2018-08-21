@@ -20,8 +20,11 @@ function game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
   active_stone = 2
   k_init = k
   won = Symbol()
+  game_length = 0
 
   while true
+    game_length += 1
+
     move = active_player == :top ? sample_move(state, active_stone, net_top_move) : sample_move(state, active_stone, net_bot_move)
     if (active_player == :top) && (k <= mb.N)# collect data for top player
       mb.states_before_moves[:,k] = state
@@ -42,13 +45,15 @@ function game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
     end
 
     if won ∈ (:top_player_won, :bottom_player_won)
-        reward = [discount.^collect((length(k_init:min(k - 1,mb.N))-1):-1:1); r_end]
+      if k_init + game_length <= mb.N
+        reward = (discount .^ ((k - k_init - 1):-1:0)) .* r_end
         if won == :top_player_won
-            mb.rewards[k_init:min(k - 1,mb.N)] .+= reward
+            mb.rewards[k_init:(k - 1)] .+= reward
         else
-            mb.rewards[k_init:min(k - 1,mb.N)] .-= reward
+            mb.rewards[k_init:(k - 1)] .-= reward
         end
-        return k
+      end
+      return k
     end
   end
 end
@@ -62,7 +67,7 @@ function collectData(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
     k = game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass, mb, k, r_end, discount, length_of_game_tolerance)
   end
 
-  data = mb.states_before_moves, mb.moves, mb.states_before_passes, mb.passes, (mb.rewards .- mean(mb.rewards))./std(mb.rewards)
+  data = mb.states_before_moves, mb.moves, mb.states_before_passes, mb.passes, mb.rewards #(mb.rewards .- mean(mb.rewards))./std(mb.rewards)
 end
 
 
