@@ -84,6 +84,9 @@ function train_hupo!()
       known_state = [1; 1; 5; 2; 1; 3; 4; 1; 4; 2; 4; 3; 1; 2; 1; 0; 0; 0]
       n2 = net_top_pass(known_state).data
       println("Safety check passing: $(n2) which is $(n2[5]/(n2[4] + n2[5] + n2[6])*100) %")
+      known_state = [1; 1; 2; 1; 1; 2; 5; 1; 5; 2; 5; 3; 0; 0; 2; 0; 0; 0]
+      n2 = net_top_pass(known_state).data
+      println("Safety check passing: $(n2) which is $((1-n2[1]/(n2[1] + n2[2] + n2[4] + n2[5] + n2[6]))*100) %")
       println()
     end
 
