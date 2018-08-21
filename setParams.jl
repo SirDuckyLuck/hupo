@@ -1,6 +1,6 @@
-params(net_top_move)[1].data .= zeros(100, 18)
-params(net_top_move)[3].data .= zeros(100, 100)
-params(net_top_move)[5].data .= zeros(4, 100)
-params(net_top_pass)[1].data .= zeros(100, 18)
-params(net_top_pass)[3].data .= zeros(100, 100)
-params(net_top_pass)[5].data .= zeros(6, 100)
+params(net_top_move)[1].data .= 0
+params(net_top_move)[3].data .= 0
+params(net_top_move)[5].data .= 0
+params(net_top_pass)[1].data .= 0
+params(net_top_pass)[3].data .= 0
+params(net_top_pass)[5].data .= 0
