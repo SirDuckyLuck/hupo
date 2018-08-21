@@ -10,14 +10,16 @@ const minP = 0.05
 const maxP = 1-minP
 
 const net_top_move = Chain(
-    Dense(18, 100, relu),
-    Dense(100, 100, relu),
-    Dense(100, 4),
+    Dense(18, 20, relu),
+    Dense(20, 20, relu),
+    Dense(20, 20, relu),
+    Dense(20, 4),
     softmax)
 const net_top_pass = Chain(
-    Dense(18, 100, relu),
-    Dense(100, 100, relu),
-    Dense(100, 6),
+    Dense(18, 20, relu),
+    Dense(20, 20, relu),
+    Dense(20, 20, relu),
+    Dense(20, 6),
     softmax)
 const net_bot_move(x) = softmax(param(ones(4, 18)) * x)
 const net_bot_pass(x) = softmax(param(ones(6, 18)) * x)
@@ -67,6 +69,9 @@ function train_hupo!()
 
     if (epoch % 100 == 0)
       println("$epoch")
+      known_state = [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
+      n0 = net_top_move(known_state).data
+      println("Safety check moving from start: $(n0) %")
       known_state = [1; 1; 4; 1; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
       n1 = net_top_move(known_state).data
       println("Safety check moving: $(n1) which is $(n1[2]/(n1[1] + n1[2])*100) %")

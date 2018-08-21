@@ -1,6 +1,6 @@
-params(net_top_move)[1].data .= 0
-params(net_top_move)[3].data .= 0
-params(net_top_move)[5].data .= 0
-params(net_top_pass)[1].data .= 0
-params(net_top_pass)[3].data .= 0
-params(net_top_pass)[5].data .= 0
+for i in 1:length(params(net_top_move))
+  params(net_top_move)[i].data .= 0
+end
+for i in 1:length(params(net_top_pass))
+  params(net_top_pass)[i].data .= 0
+end
