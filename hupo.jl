@@ -4,6 +4,7 @@ include("collectingData.jl")
 using .UnicodeGrids
 using Statistics
 using Flux
+using Flux: onehot
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 
@@ -15,9 +16,23 @@ function fill_state_beginning!(state)
   state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
 end
 
+const gX = [Int.(onehot(x, 1:5)) for x in 1:5]
+const gY = [Int.(onehot(x, 1:3)) for x in 1:3]
+const gA = [Int.(onehot(x, 1:4)) for x in 1:4]
+
+function transformState(state)
+  try
+  return [gX[state[1]]; gX[state[3]]; gX[state[5]]; gX[state[7]]; gX[state[9]]; gX[state[11]];
+    gY[state[2]]; gY[state[4]]; gY[state[6]]; gY[state[8]]; gY[state[10]]; gY[state[12]];
+    gA[state[13]+2]; gA[state[14]+2]; gA[state[15]+2]; gA[state[16]+2]; gA[state[17]+2]; gA[state[18]+2]]
+  catch
+    print_with_color(:green, state)
+  end
+end
+
 
 function sample_move(state, active_stone, net_move)
-  p = net_move(state).data .+ 1e-6
+  p = net_move(transformState(state)).data .+ 1e-6
 
   stone_position = [state[active_stone*2 - 1];state[active_stone*2]]
 
@@ -57,7 +72,7 @@ end
 
 
 function sample_pass(state, active_stone, net_pass)
-  p = net_pass(state).data .+ 1e-6
+  p = net_pass(transformState(state)).data .+ 1e-6
 
   for pass in 1:6 # check passing plausibility
       if state[12+pass] != 0.
@@ -82,7 +97,7 @@ function apply_move!(state, active_stone, move)
   elseif move == left
       state[active_stone*2] -=1
   elseif move == out
-        state[(active_stone*2-1):(active_stone*2)] = [0;0]
+        state[(active_stone*2-1):(active_stone*2)] = [3;2]
         state[12+active_stone] = -1
   end
 
