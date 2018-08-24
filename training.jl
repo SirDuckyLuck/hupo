@@ -37,7 +37,7 @@ function train_hupo!()
     data = collectData(net_top_move, net_bot_move, lengthOfBuffer, r_end, discount, length_of_game_tolerance)
 
     for i in 1:lengthOfBuffer
-      (data[2][i] < 5) && (Flux.train!(loss_move, zip(transformState(data[1][:,i]),data[2][i],data[3][i]), opt_move))
+      Flux.train!(loss_move, zip(transformState(data[1][:,i]),data[2][i],data[3][i]), opt_move)
     end
 
     if (epoch % 100 == 0)
