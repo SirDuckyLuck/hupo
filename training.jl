@@ -4,10 +4,8 @@ numOfEpochs = 10 ^ 6
 const lengthOfBuffer = 300
 const r_end = 1.
 const discount = 0.9
-const learning_rate = 1e-4
+const learning_rate = 1e-2
 const length_of_game_tolerance = 1001
-const minP = 0.010
-const maxP = 1-minP
 
 const net_top_move = Chain(
     Dense(18, 200, relu),
@@ -19,11 +17,7 @@ const net_bot_move = Chain(
 
 function loss_move(state, move, reward)
     p = net_top_move(state)[move]
-    if ((reward < 0.) && (minP < p)) || ((reward > 0.) && (maxP > p))
-      -log(p) * reward
-    else
-      0p
-    end
+    -log(p + 1e-8) * reward
 end
 
 function signal_handler(sig::Cint)::Void
