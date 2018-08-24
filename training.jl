@@ -8,8 +8,8 @@ const learning_rate = 1e-2
 const length_of_game_tolerance = 1001
 
 const net_top_move = Chain(
-    Dense(18, 200, relu),
-    Dense(200, 4),
+    Dense(18, 50, relu),
+    Dense(50, 4),
     softmax)
 const net_bot_move = Chain(
     Dense(18, 4),

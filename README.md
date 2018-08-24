@@ -6,6 +6,7 @@ but slightly different
 ### Must read
 http://karpathy.github.io/2016/05/31/rl/
 https://flyyufelix.github.io/2017/10/12/dqn-vs-pg.html
+https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb0058c01
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
