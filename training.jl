@@ -59,6 +59,14 @@ function train_hupo!()
 
   epoch = 0
   while epoch < numOfEpochs
+    #check against random net
+    if epoch % 1000 == 0
+      dummy_games = [game(net_top_move, net_top_pass, net_bot_move, net_bot_pass) for i in 1:1000]
+      net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
+      avg_length = mean(x[2] for x in dummy_games)
+      println("Epoch: $(epoch), net_top won $net_top_wins against random net in $avg_length rounds")
+    end
+
     epoch += 1
     data = collectData(net_top_move, net_top_pass, net_bot_move, net_bot_pass, lengthOfBuffer, r_end, discount, length_of_game_tolerance)
 
@@ -88,14 +96,6 @@ function train_hupo!()
       # n2 = net_top_pass(transformState(known_state)).data
       # println("Safety check passing: $(n2) which is $((1-n2[1]/(n2[1] + n2[2] + n2[4] + n2[5] + n2[6]))*100) %")
       # println()
-    end
-
-    #check against random net
-    if (epoch % 1000 == 0 || epoch == 1)
-      dummy_games = [game(net_top_move, net_top_pass, net_bot_move, net_bot_pass) for i in 1:1000]
-      net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
-      avg_length = mean(x[2] for x in dummy_games)
-      println("Epoch: $(epoch), net_top won $net_top_wins against random net in $avg_length rounds")
     end
   end
 end
