@@ -10,9 +10,7 @@ const minP = 0.10
 const maxP = 1-minP
 
 const net_top_move = Chain(
-    Dense(72, 100, relu),
-    Dense(100, 20, relu),
-    Dense(20, 20, relu),
+    Dense(72, 20, relu),
     Dense(20, 4),
     softmax)
 const net_top_pass = Chain(
