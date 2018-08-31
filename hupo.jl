@@ -72,18 +72,19 @@ end
 
 
 function sample_pass(state, active_stone, net_pass)
-  p = net_pass(transformState(state)).data .+ 1e-6
-
-  for pass in 1:6 # check passing plausibility
-      if state[12+pass] != 0.
-          p[pass] = 0.
-      end
-  end
-
-  p ./= sum(p)
-
-  r = rand()
-  pass = findfirst(x -> x >= r, cumsum(p))
+  # p = net_pass(transformState(state)).data .+ 1e-6
+  #
+  # for pass in 1:6 # check passing plausibility
+  #     if state[12+pass] != 0.
+  #         p[pass] = 0.
+  #     end
+  # end
+  #
+  # p ./= sum(p)
+  #
+  # r = rand()
+  # pass = findfirst(x -> x >= r, cumsum(p))
+  active_stone == 2 ? 5 : 2
 end
 
 
