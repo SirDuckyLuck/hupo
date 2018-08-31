@@ -70,10 +70,8 @@ function train_hupo!()
     epoch += 1
     data = collectData(net_top_move, net_top_pass, net_bot_move, net_bot_pass, lengthOfBuffer, r_end, discount, length_of_game_tolerance)
 
-    for i in 1:lengthOfBuffer
-      (data[2][i] < 5) && (Flux.train!(loss_move, zip(transformState(data[1][:,i]),data[2][i],data[5][i]), opt_move))
-      Flux.train!(loss_pass, zip(transformState(data[3][:,i]),data[4][i],data[5][i]), opt_pass)
-    end
+    Flux.train!(loss_move, [(transformState(data[1][:,i]),data[2][i],data[5][i]) for i in 1:lengthOfBuffer if data[2][i] < 5], opt_move)
+    # Flux.train!(loss_pass, [(transformState(data[3][:,i]),data[4][i],data[5][i]) for i in 1:lengthOfBuffer], opt_pass)
 
     if (epoch % 100 == 0)
       println("$epoch")
