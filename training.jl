@@ -6,8 +6,6 @@ const r_end = 1.
 const discount = 0.99
 const learning_rate = 1e-4
 const length_of_game_tolerance = 1001
-const minP = 0.10
-const maxP = 1-minP
 
 const net_top_move = Chain(
     Dense(72, 32, relu),
@@ -25,17 +23,13 @@ const net_bot_pass(x) = softmax(param(ones(6, 72)) * x)
 
 
 function loss_move(state, move, reward)
-    p = net_top_move(state)[move]
-    -log(p + 1e-8) * reward
+  p = net_top_move(state)[move]
+  -log(p + 1e-8) * reward
 end
 
 function loss_pass(state, pass, reward)
-    p = net_top_pass(state)[pass]
-    if ((reward < 0.) && (minP < p)) || ((reward > 0.) && (maxP > p))
-      -log(p) * reward
-    else
-      0p
-    end
+  p = net_top_pass(state)[pass]
+  -log(p + 1e-8) * reward
 end
 
 

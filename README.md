@@ -3,27 +3,19 @@
 https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf
 but slightly different
 
-### Inspiration
+### Worth reading
 http://karpathy.github.io/2016/05/31/rl/
+https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb0058c01
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
 2. Create three bots controlling one stone each. Use "team spirit" parameter.
 
-### Representation
-#### State (*Vector of length 18*)
-First six are coordinates of stones for top player (row and column), in case of being out of the game it is 0 0. Second six are coordinates for bottom player.
-Next three numbers are states for top player:
-1. 2 == stone has totem
-2. 1 == stone had totem this turnover
-3. 0 == stone did not have totem this turnover
-4. -1 == stone is out of the game
+### Steps
+1. Create a bot that is beating human in simple hupo game with only one middle stone for each player. First player should win 100 percent of time.
 
-Last three numbers are states for bottom player.
-#### Action (*Tuple of length 2*)
-Actions are coded with:
-##### move_to
-Enum for where to move. "Out" if there is no plausible move.
-
-##### pass_to
-Giving number of stone to whom to pass totem (1,2,3 are stones of top player, 4,5,6 are stones of bottom player).
+###TODO
+1. optimize speed
+2. save "generations" of nets
+3. ad environment for human vs net
+4. add probability information to game printing 
