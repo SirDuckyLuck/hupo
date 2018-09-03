@@ -10,8 +10,8 @@ const minP = 0.10
 const maxP = 1-minP
 
 const net_top_move = Chain(
-    Dense(72, 20, relu),
-    Dense(20, 4),
+    Dense(72, 32, relu),
+    Dense(32, 4),
     softmax)
 const net_top_pass = Chain(
     Dense(72, 100, relu),
@@ -26,11 +26,7 @@ const net_bot_pass(x) = softmax(param(ones(6, 72)) * x)
 
 function loss_move(state, move, reward)
     p = net_top_move(state)[move]
-    if ((reward < 0.) && (minP < p)) || ((reward > 0.) && (maxP > p))
-      -log(p) * reward
-    else
-      0p
-    end
+    -log(p + 1e-8) * reward
 end
 
 function loss_pass(state, pass, reward)

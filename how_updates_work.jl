@@ -90,16 +90,23 @@ net_top = Chain(
   softmax)
 opt = ADAM(Flux.params(net_top))
 
+net2 = deepcopy(net_top)
+net_top = net2
 state = [1; 1; 4; 1; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
-print_state(state)
+# print_state(state)
+#
+# print_action_probs(state)
+function loss(state, move, reward)
+    p = net_top(state)[move]
+    -log(p + 1e-8) * reward
+end
 
-print_action_probs(state)
-translateMove(7)
-t = state,[7],[+1.]
+# translateMove(7)
+t = state,7,+1.
 loss(t[1],t[2],t[3])
 net_top(state).data[7]
-data = Iterators.repeated((t[1],t[2],t[3]), 1)
-Flux.train!(loss, data, opt)
+data = [(t[1],t[2],t[3]), (t[1], 8, 1)]
+for i in 1:2 Flux.train!(loss, [data[i]], opt) end
 loss(t[1],t[2],t[3])
 net_top(state).data[7]
 print_action_probs(state)
