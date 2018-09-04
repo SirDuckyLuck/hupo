@@ -1,6 +1,6 @@
 include("hupo.jl")
 
-numOfEpochs = 10 ^ 6
+numOfEpochs = 10 ^ 2
 const lengthOfBuffer = 300
 const r_end = 1.
 const discount = 0.99
@@ -12,10 +12,8 @@ const net_top_move = Chain(
     Dense(32, 4),
     softmax)
 const net_top_pass = Chain(
-    Dense(72, 100, relu),
-    Dense(100, 20, relu),
-    Dense(20, 20, relu),
-    Dense(20, 6),
+    Dense(72, 1, relu),
+    Dense(1, 6),
     softmax)
 const net_bot_move(x) = softmax(param(ones(4, 72)) * x)
 const net_bot_pass(x) = softmax(param(ones(6, 72)) * x)
@@ -88,4 +86,17 @@ end
 
 
 train_hupo!()
-game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
+using BSON: @save
+using BSON: @load
+@save joinpath(@__DIR__,"net_top_pass.bson") net_top_pass
+@save joinpath(@__DIR__,"net_top_move.bson") net_top_move
+@save joinpath(@__DIR__,"net_bot_pass.bson") net_bot_pass
+@save joinpath(@__DIR__,"net_bot_move.bson") net_bot_move
+
+function play_model()
+  @load joinpath(@__DIR__,"net_top_pass.bson") net_top_pass
+  @load joinpath(@__DIR__,"net_top_move.bson") net_top_move
+  @load joinpath(@__DIR__,"net_bot_pass.bson") net_bot_pass
+  @load joinpath(@__DIR__,"net_bot_move.bson") net_bot_move
+  game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
+end
