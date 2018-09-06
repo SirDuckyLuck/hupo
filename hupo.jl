@@ -6,13 +6,14 @@ using Flux
 using Flux: onehot
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
-
+# probability: up+1, up+2, ... up+6, right+1, right+2, ..., right+6m ..., out+6
 
 get_active_stone(state) = findfirst(view(state, 13:18), 2)
-get_active_player(active_stone) = active_stone ∈ (1, 2, 3) ? :top : :bot
+get_active_player(state) = get_active_stone(state) ∈ (1, 2, 3) ? :top : :bot
 
 function fill_state_beginning!(state)
-  state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1]
+  # state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1] # dummy game
+  state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0] # original game
 end
 
 const gX = [Int.(onehot(x, 1:5)) for x in 1:5]
@@ -30,8 +31,9 @@ function transformState(state)
 end
 
 
-function sample_move(state, active_stone, net_move)
-  p = net_move(transformState(state)).data .+ 1e-6
+function sample_action(state, net)
+  p = net(transformState(state)).data .+ 1e-6
+  active_stone = get_active_stone(state)
 
   stone_position = [state[active_stone*2 - 1];state[active_stone*2]]
 
@@ -47,47 +49,56 @@ function sample_move(state, active_stone, net_move)
         new_position[2] -=1
     end
 
-    # check for middle
-    if new_position == [3; 2]
-        p[Int(move)] = 0.
-    end
-    # check if there is another stone
-    for stone in 1:6
-        if new_position == state[stone*2-1:stone*2]
-            p[Int(move)] = 0.
-        end
-    end
-    # check if out of the board
-    if new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
-        p[Int(move)] = 0.
+    if check_move_impossibility(new_position, state)
+      idx = (Int(move) - 1)*6 + 1 : Int(move)*6
+      p[idx] .= 0.
     end
   end
 
-  (all(p .== 0.)) && (return out) # if you can do something else than get kicked, do
+  for pass in 1:6
+    if check_pass_impossibility(pass, state)
+      idx = pass : 6 : 30
+      p[idx] .= 0.
+    end
+  end
+
+  (any(p[1:24] .> 0.)) && (p[25:30] .= 0.) # if you can do something else than get kicked, do so
   p ./= sum(p)
   r = rand()
-  move = Move(findfirst(x -> x >= r, cumsum(p)))
+  idx = findfirst(x -> x >= r, cumsum(p))
+  move = Move(div(idx - 1, 6) + 1)
+  pass = idx % 6 == 0 ? 6 : idx % 6
+
+  move, pass
+end
+
+function check_move_impossibility(new_position, state)
+  # check if there is another stone
+  for stone in 1:6
+    if new_position == state[stone*2-1:stone*2]
+      return true
+    end
+  end
+  # check if middle or out of the board
+  if new_position == [3; 2] || new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
+    return true
+  end
+
+  false
+end
+
+function check_pass_impossibility(pass, state)
+  if state[12+pass] != 0.
+    return true
+  end
+
+  false
 end
 
 
-function sample_pass(state, active_stone, net_pass)
-  # p = net_pass(transformState(state)).data .+ 1e-6
-  #
-  # for pass in 1:6 # check passing plausibility
-  #     if state[12+pass] != 0.
-  #         p[pass] = 0.
-  #     end
-  # end
-  #
-  # p ./= sum(p)
-  #
-  # r = rand()
-  # pass = findfirst(x -> x >= r, cumsum(p))
-  active_stone == 2 ? 5 : 2
-end
+function apply_move!(state, move)
+  active_stone = get_active_stone(state)
 
-
-function apply_move!(state, active_stone, move)
   if move == up
       state[active_stone*2 - 1] -=1
   elseif move == right
@@ -106,7 +117,7 @@ end
 
 function apply_pass!(state, active_stone, pass)
   state[12 + active_stone] != -1 && (state[12 + active_stone] = 1)
-  if get_active_player(active_stone) != get_active_player(pass)
+  if (active_stone ∈ (1, 2, 3)) != (pass  ∈ (1, 2, 3))
     for s in 13:18
       if state[s] == 1
         state[s] = 0
@@ -114,12 +125,10 @@ function apply_pass!(state, active_stone, pass)
     end
   end
   state[12 + pass] = 2
-
-  pass
 end
 
 
-function check_state(state, active_stone)
+function check_state(state)
   won = Symbol()
 
   if state[1:2] == [4;2] || state[3:4] == [4;2] || state[5:6] == [4;2] || state[16:18] == [-1; -1; -1]
@@ -128,27 +137,26 @@ function check_state(state, active_stone)
       won = :bottom_player_won
   end
 
-  active_player = get_active_player(active_stone)
+  active_player = get_active_player(state)
 
   won, active_player
 end
 
 
-function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
+function game(net_top, net_bot)
     state = Array{Int}(6*2+6)
     fill_state_beginning!(state)
     active_player = :top
-    active_stone = 2
     game_length = 0
 
     while true
       game_length += 1
-
-      move = active_player == :top ? sample_move(state, active_stone, net_top_move) : sample_move(state, active_stone, net_bot_move)
-      active_stone = apply_move!(state, active_stone, move)
-      pass = active_player == :top ? sample_pass(state, active_stone, net_top_pass) : sample_pass(state, active_stone, net_bot_pass)
-      active_stone = apply_pass!(state, active_stone, pass)
-      won, active_player = check_state(state, active_stone)
+      move, pass = active_player == :top ?
+                   sample_action(state, net_top) :
+                   sample_action(state, net_bot)
+      active_stone = apply_move!(state, move)
+      apply_pass!(state, active_stone, pass)
+      won, active_player = check_state(state)
 
       if won ∈ [:top_player_won :bottom_player_won]
           return won, game_length
@@ -156,5 +164,4 @@ function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
     end
 end
 
-
-# game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
+# game(net_top, net_bot)

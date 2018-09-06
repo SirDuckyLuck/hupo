@@ -1,41 +1,41 @@
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
-function game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
-    state = Array{Int}(6*2+6)
-    fill_state_beginning!(state)
-    active_player = :top
-    active_stone = 2
-    round_number = 1
+function game_show(net_top, net_bot)
+  state = Array{Int}(6*2+6)
+  fill_state_beginning!(state)
+  active_player = :top
+  round_number = 1
 
-    println()
+  println()
+  println("Round $(round_number)")
+  print_state(state)
+  println("press <Enter>")
+
+  while true
+    readline()
+    clear(15)
+
+    idx = get_active_stone(state)
+    pos = (state[2*idx - 1], state[2*idx])
+
+    move, pass = active_player == :top ?
+           sample_action(state, net_top) :
+           sample_action(state, net_bot)
+    active_stone = apply_move!(state, move)
+    apply_pass!(state, active_stone, pass)
+    won, active_player = check_state(state)
+
     println("Round $(round_number)")
     print_state(state)
-    println("press <Enter>")
+    println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
 
-    while true
-        readline()
-        clear(15)
-
-        idx = get_active_stone(state)
-        pos = (state[2*idx - 1], state[2*idx])
-
-        move = active_player == :top ? sample_move(state, active_stone, net_top_move) : sample_move(state, active_stone, net_bot_move)
-        active_stone = apply_move!(state, active_stone, move)
-        pass = active_player == :top ? sample_pass(state, active_stone, net_top_pass) : sample_pass(state, active_stone, net_bot_pass)
-        active_stone = apply_pass!(state, active_stone, pass)
-        won, active_player = check_state(state, active_stone)
-
-        println("Round $(round_number)")
-        print_state(state)
-        println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
-
-        if won ∈ (:top_player_won, :bottom_player_won)
-            println(won)
-            break
-        end
-        round_number += 1
+    if won ∈ (:top_player_won, :bottom_player_won)
+        println(won)
+        break
     end
+    round_number += 1
+  end
 end
 
 

@@ -14,8 +14,8 @@ https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb
 ### Steps
 1. Create a bot that is beating human in simple hupo game with only one middle stone for each player. First player should win 100 percent of time.
 
-###TODO
+### TODO
 1. optimize speed
 2. save "generations" of nets
 3. ad environment for human vs net
-4. add probability information to game printing 
+4. add probability information to game printing
