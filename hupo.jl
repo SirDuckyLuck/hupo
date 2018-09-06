@@ -12,8 +12,8 @@ get_active_stone(state) = findfirst(view(state, 13:18), 2)
 get_active_player(state) = get_active_stone(state) ∈ (1, 2, 3) ? :top : :bot
 
 function fill_state_beginning!(state)
-  # state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1] # dummy game
-  state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0] # original game
+  state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1] # dummy game
+  # state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0] # original game
 end
 
 const gX = [Int.(onehot(x, 1:5)) for x in 1:5]
