@@ -2,7 +2,6 @@ include("UnicodeGrids.jl")
 include("printing.jl")
 include("collectingData.jl")
 using .UnicodeGrids
-using Statistics
 using Flux
 using Flux: onehot
 
@@ -136,7 +135,7 @@ end
 
 
 function game(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
-    state = Array{Int}(undef,6*2+6)
+    state = Array{Int}(6*2+6)
     fill_state_beginning!(state)
     active_player = :top
     active_stone = 2

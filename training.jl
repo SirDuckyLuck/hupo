@@ -1,6 +1,6 @@
 include("hupo.jl")
 
-numOfEpochs = 10 ^ 2
+numOfEpochs = 10 ^ 3
 const lengthOfBuffer = 300
 const r_end = 1.
 const discount = 0.99
@@ -17,7 +17,6 @@ const net_top_pass = Chain(
     softmax)
 const net_bot_move(x) = softmax(param(ones(4, 72)) * x)
 const net_bot_pass(x) = softmax(param(ones(6, 72)) * x)
-# include("setParams.jl")
 
 
 function loss_move(state, move, reward)
@@ -86,6 +85,7 @@ end
 
 
 train_hupo!()
+game_show(net_top_move, net_top_pass, net_bot_move, net_bot_pass)
 using BSON: @save
 using BSON: @load
 @save joinpath(@__DIR__,"net_top_pass.bson") net_top_pass

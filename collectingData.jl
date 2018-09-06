@@ -14,7 +14,7 @@ end
 
 function game!(net_top_move, net_top_pass, net_bot_move, net_bot_pass,
                mb, k,  r_end = 1., discount = 0.8, length_of_game_tolerance = 500)
-  state = Array{Int}(undef,6*2+6)
+  state = Array{Int}(6*2+6)
   fill_state_beginning!(state)
   active_player = :top
   active_stone = 2
