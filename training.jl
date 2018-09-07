@@ -1,6 +1,9 @@
 include("hupo.jl")
+using BSON: @save
+using BSON: @load
 
-numOfEpochs = 10 ^ 4 + 1
+
+numOfEpochs = 10 ^ 5 + 1
 const lengthOfBuffer = 300
 const r_end = 1.
 const discount = 0.99
@@ -54,16 +57,17 @@ function train_hupo!()
 end
 
 
-train_hupo!()
-game_show(net_top, net_bot)
-using BSON: @save
-using BSON: @load
-@save joinpath(@__DIR__,"net_top.bson") net_top
-@save joinpath(@__DIR__,"net_bot.bson") net_bot
+function save_models()
+  @save joinpath(@__DIR__,"net_top.bson") net_top
+  @save joinpath(@__DIR__,"net_bot.bson") net_bot
+end
 
 
-function play_model()
+function play()
   @load joinpath(@__DIR__,"net_top.bson") net_top
   @load joinpath(@__DIR__,"net_bot.bson") net_bot
   game_show(net_top, net_bot)
 end
+
+
+println("Use one of these: train_hupo!(), save_models() and play()")

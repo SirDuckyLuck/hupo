@@ -6,7 +6,7 @@ mutable struct memory_buffer
 end
 
 
-function action2idx(move, pass)
+function action2idx(move::Move, pass::Int)
   (Int(move) - 1)*6 + pass
 end
 
@@ -16,7 +16,8 @@ function memory_buffer(N::Int)
 end
 
 
-function game!(net_top, net_bot, mb, k,  r_end = 1., discount = 0.8, length_of_game_tolerance = 500)
+function game!(net_top::Flux.Chain, net_bot::Flux.Chain, mb::memory_buffer,
+               k::Int,  r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
   state = Array{Int}(6*2+6)
   fill_state_beginning!(state)
   active_player = :top
@@ -57,7 +58,8 @@ function game!(net_top, net_bot, mb, k,  r_end = 1., discount = 0.8, length_of_g
 end
 
 
-function collectData(net_top, net_bot, lengthOfBuffer = 300, r_end = 1., discount = 0.8, length_of_game_tolerance = 500)
+function collectData(net_top::Flux.Chain, net_bot::Flux.Chain, lengthOfBuffer::Int = 300,
+                     r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
   mb = memory_buffer(lengthOfBuffer)
   k = 1
   while k <= mb.N

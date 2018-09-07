@@ -1,4 +1,3 @@
-include("UnicodeGrids.jl")
 include("printing.jl")
 include("collectingData.jl")
 using .UnicodeGrids
@@ -6,21 +5,22 @@ using Flux
 using Flux: onehot
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
+include("UnicodeGrids.jl")
 # probability: up+1, up+2, ... up+6, right+1, right+2, ..., right+6m ..., out+6
 
-get_active_stone(state) = findfirst(view(state, 13:18), 2)
-get_active_player(state) = get_active_stone(state) ∈ (1, 2, 3) ? :top : :bot
+get_active_stone(state::Array{Int}) = findfirst(view(state, 13:18), 2)
+get_active_player(state::Array{Int}) = get_active_stone(state) ∈ (1, 2, 3) ? :top : :bot
 
-function fill_state_beginning!(state)
-  state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1] # dummy game
-  # state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0] # original game
+function fill_state_beginning!(state::Array{Int})
+  # state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1] # dummy game
+  state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0] # original game
 end
 
 const gX = [Int.(onehot(x, 1:5)) for x in 1:5]
 const gY = [Int.(onehot(x, 1:3)) for x in 1:3]
 const gA = [Int.(onehot(x, 1:4)) for x in 1:4]
 
-function transformState(state)
+function transformState(state::Array{Int})
   try
   return [gX[state[1]]; gX[state[3]]; gX[state[5]]; gX[state[7]]; gX[state[9]]; gX[state[11]];
     gY[state[2]]; gY[state[4]]; gY[state[6]]; gY[state[8]]; gY[state[10]]; gY[state[12]];
@@ -31,10 +31,34 @@ function transformState(state)
 end
 
 
-function sample_action(state, net)
-  p = net(transformState(state)).data .+ 1e-6
-  active_stone = get_active_stone(state)
+function sample_action(state::Array{Int}, net::Flux.Chain)
+  p = policy(state, net)
+  r = rand()
+  idx = findfirst(x -> x >= r, cumsum(p))
 
+  move, pass = idx2MovePass(idx)
+end
+
+
+function idx2MovePass(idx::Int)
+  move = Move(div(idx - 1, 6) + 1)
+  pass = idx % 6 == 0 ? 6 : idx % 6
+
+  move, pass
+end
+
+
+function policy(state::Array{Int}, net::Flux.Chain)
+  p = net(transformState(state)).data .+ 1e-6
+  zero_impossible_moves!(p, state)
+  p ./= sum(p)
+
+  p
+end
+
+
+function zero_impossible_moves!(p::Array{Float64}, state::Array{Int})
+  active_stone = get_active_stone(state)
   stone_position = [state[active_stone*2 - 1];state[active_stone*2]]
 
   for move in instances(Move)[1:4] # check moves plausibility except getting out
@@ -63,16 +87,10 @@ function sample_action(state, net)
   end
 
   (any(p[1:24] .> 0.)) && (p[25:30] .= 0.) # if you can do something else than get kicked, do so
-  p ./= sum(p)
-  r = rand()
-  idx = findfirst(x -> x >= r, cumsum(p))
-  move = Move(div(idx - 1, 6) + 1)
-  pass = idx % 6 == 0 ? 6 : idx % 6
-
-  move, pass
 end
 
-function check_move_impossibility(new_position, state)
+
+function check_move_impossibility(new_position::Array{Int}, state::Array{Int})
   # check if there is another stone
   for stone in 1:6
     if new_position == state[stone*2-1:stone*2]
@@ -87,7 +105,8 @@ function check_move_impossibility(new_position, state)
   false
 end
 
-function check_pass_impossibility(pass, state)
+
+function check_pass_impossibility(pass::Int, state::Array{Int})
   if state[12+pass] != 0.
     return true
   end
@@ -96,7 +115,7 @@ function check_pass_impossibility(pass, state)
 end
 
 
-function apply_move!(state, move)
+function apply_move!(state::Array{Int}, move::Move)
   active_stone = get_active_stone(state)
 
   if move == up
@@ -115,7 +134,8 @@ function apply_move!(state, move)
   active_stone
 end
 
-function apply_pass!(state, active_stone, pass)
+
+function apply_pass!(state::Array{Int}, active_stone::Int, pass::Int)
   state[12 + active_stone] != -1 && (state[12 + active_stone] = 1)
   if (active_stone ∈ (1, 2, 3)) != (pass  ∈ (1, 2, 3))
     for s in 13:18
@@ -128,7 +148,7 @@ function apply_pass!(state, active_stone, pass)
 end
 
 
-function check_state(state)
+function check_state(state::Array{Int})
   won = Symbol()
 
   if state[1:2] == [4;2] || state[3:4] == [4;2] || state[5:6] == [4;2] || state[16:18] == [-1; -1; -1]
@@ -143,8 +163,8 @@ function check_state(state)
 end
 
 
-function game(net_top, net_bot)
-    state = Array{Int}(6*2+6)
+function game(net_top::Flux.Chain, net_bot::Flux.Chain)
+    state = Array{Int}(18)
     fill_state_beginning!(state)
     active_player = :top
     game_length = 0
