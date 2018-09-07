@@ -1,6 +1,6 @@
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
-function game_show(net_top::Flux.Chain, net_bot::Flux.Chain)
+function game_show(net_top, net_bot)
   state = Array{Int}(6*2+6)
   fill_state_beginning!(state)
   active_player = :top
@@ -60,7 +60,7 @@ function clear(n::Int)
 end
 
 
-function get_probabilities(state::Array{Int}, net::Flux.Chain, k::Int = 3)
+function get_probabilities(state::Array{Int}, net, k::Int = 3)
   p = policy(state, net)
   v = Array{Any}(0,3)
 

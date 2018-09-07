@@ -1,11 +1,11 @@
-include("printing.jl")
-include("collectingData.jl")
+include("UnicodeGrids.jl")
 using .UnicodeGrids
 using Flux
 using Flux: onehot
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
-include("UnicodeGrids.jl")
+include("printing.jl")
+include("collectingData.jl")
 # probability: up+1, up+2, ... up+6, right+1, right+2, ..., right+6m ..., out+6
 
 get_active_stone(state::Array{Int}) = findfirst(view(state, 13:18), 2)
@@ -31,7 +31,7 @@ function transformState(state::Array{Int})
 end
 
 
-function sample_action(state::Array{Int}, net::Flux.Chain)
+function sample_action(state::Array{Int}, net)
   p = policy(state, net)
   r = rand()
   idx = findfirst(x -> x >= r, cumsum(p))
@@ -48,7 +48,7 @@ function idx2MovePass(idx::Int)
 end
 
 
-function policy(state::Array{Int}, net::Flux.Chain)
+function policy(state::Array{Int}, net)
   p = net(transformState(state)).data .+ 1e-6
   zero_impossible_moves!(p, state)
   p ./= sum(p)
@@ -163,7 +163,7 @@ function check_state(state::Array{Int})
 end
 
 
-function game(net_top::Flux.Chain, net_bot::Flux.Chain)
+function game(net_top, net_bot)
     state = Array{Int}(18)
     fill_state_beginning!(state)
     active_player = :top

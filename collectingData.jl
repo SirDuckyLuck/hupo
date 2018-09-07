@@ -16,7 +16,7 @@ function memory_buffer(N::Int)
 end
 
 
-function game!(net_top::Flux.Chain, net_bot::Flux.Chain, mb::memory_buffer,
+function game!(net_top, net_bot, mb::memory_buffer,
                k::Int,  r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
   state = Array{Int}(6*2+6)
   fill_state_beginning!(state)
@@ -58,7 +58,7 @@ function game!(net_top::Flux.Chain, net_bot::Flux.Chain, mb::memory_buffer,
 end
 
 
-function collectData(net_top::Flux.Chain, net_bot::Flux.Chain, lengthOfBuffer::Int = 300,
+function collectData(net_top, net_bot, lengthOfBuffer::Int = 300,
                      r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
   mb = memory_buffer(lengthOfBuffer)
   k = 1
