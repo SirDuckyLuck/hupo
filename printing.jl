@@ -9,11 +9,12 @@ function game_show(net_top, net_bot)
   println()
   println("Round $(round_number)")
   print_state(state)
+  println()
   println("press <Enter>")
 
   while true
     readline()
-    clear(15)
+    clear(16)
 
     idx = get_active_stone(state)
     pos = (state[2*idx - 1], state[2*idx])
@@ -28,7 +29,7 @@ function game_show(net_top, net_bot)
     println("Round $(round_number)")
     print_state(state)
     println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
-    # active_player == 1 ? println(get_probabilities(state, net_top)) : println(get_probabilities(state, net_bot))
+    active_player == :top ? println(get_probabilities(state, net_top)) : println(get_probabilities(state, net_bot))
 
     if won ∈ (:top_player_won, :bottom_player_won)
         println(won)
