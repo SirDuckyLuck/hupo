@@ -1,13 +1,13 @@
 # Hupo
+
 ### Rules
-https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf
+https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf  
 but slightly different
 
 ### Worth reading
-http://karpathy.github.io/2016/05/31/rl/
-https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb0058c01
+http://karpathy.github.io/2016/05/31/rl/  
+https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb0058c01  
 https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f
-
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
