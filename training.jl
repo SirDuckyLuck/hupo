@@ -3,17 +3,17 @@ using BSON: @save
 using BSON: @load
 
 
-numOfEpochs = 10 ^ 3 + 1
+numOfEpochs = 10 ^ 5 + 1
 const lengthOfBuffer = 300
 const r_end = 1.
-const discount = 0.99
+const discount = 0.8
 const learning_rate = 1e-4
 const length_of_game_tolerance = 200
 
 const net_top = Chain(
-    Dense(72, 32, relu),
-    Dense(32, 32, relu),
-    Dense(32, 30),
+    Dense(72, 100, relu),
+    Dense(100, 100, relu),
+    Dense(100, 30),
     softmax)
 const net_bot(x) = softmax(param(ones(30, 72)) * x)
 

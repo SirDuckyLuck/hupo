@@ -7,13 +7,9 @@ but slightly different
 ### Worth reading
 http://karpathy.github.io/2016/05/31/rl/  
 https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb0058c01  
-<<<<<<< HEAD
 https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f
-http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.810&rep=rep1&type=pdf  
-=======
-https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f  
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.810&rep=rep1&type=pdf   
 http://ruder.io/optimizing-gradient-descent/
->>>>>>> 27261e5848d5640120e337e8a1c3ee6380af5f32
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
