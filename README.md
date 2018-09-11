@@ -8,6 +8,7 @@ but slightly different
 http://karpathy.github.io/2016/05/31/rl/  
 https://medium.freecodecamp.org/deep-reinforcement-learning-where-to-start-291fb0058c01  
 https://medium.freecodecamp.org/an-introduction-to-policy-gradients-with-cartpole-and-doom-495b5ef2207f
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.810&rep=rep1&type=pdf  
 
 ### Aim
 1. Create a bot that is able to beat a human controlling all three stones at once.
