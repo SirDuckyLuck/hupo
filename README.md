@@ -23,3 +23,6 @@ http://ruder.io/optimizing-gradient-descent/
 2. save "generations" of nets
 3. ad environment for human vs net
 4. add probability information to game printing
+5. try ADAM
+6. try different architectures
+7. try randomizing initial state
