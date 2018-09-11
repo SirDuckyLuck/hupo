@@ -18,8 +18,7 @@ end
 
 function game!(net_top, net_bot, mb::memory_buffer,
                k::Int,  r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
-  state = Array{Int}(6*2+6)
-  fill_state_beginning!(state)
+  state = state_beginning(:random)
   active_player = :top
   k_init = k
   won = Symbol()

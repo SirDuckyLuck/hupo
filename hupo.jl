@@ -2,6 +2,7 @@ include("UnicodeGrids.jl")
 using .UnicodeGrids
 using Flux
 using Flux: onehot
+using StatsBase
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 include("printing.jl")
@@ -11,10 +12,36 @@ include("collectingData.jl")
 get_active_stone(state::Array{Int}) = findfirst(view(state, 13:18), 2)
 get_active_player(state::Array{Int}) = get_active_stone(state) ∈ (1, 2, 3) ? :top : :bot
 
-function fill_state_beginning!(state::Array{Int})
-  # state[:] .= [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1] # dummy game
-  state[:] .= [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0] # original game
+
+function state_beginning(level = :original)
+  if level == :original
+    return [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
+  elseif level == :dummy
+    return [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1]
+  elseif level == :random
+    state = zeros(Int, 18)
+    stones1 = sample(1:3, rand(1:3), replace = false)
+    stones2 = sample(4:6, rand(1:3), replace = false)
+    numOfStones = length(stones1) + length(stones2)
+    positions = sample([1:4; 6:7; 9:10; 12:15], numOfStones, replace = false)
+    k = 0
+    for stone ∈ 1:6
+      if (stone ∈ stones1) || (stone ∈ stones2)
+        k += 1
+        (k == 1) && (state[12 + stone] = 2)
+        state[stone*2 - 1] = div(positions[k] - 1, 3) + 1
+        state[stone*2] = mod(positions[k] - 1, 3) + 1
+      else
+        state[stone*2 - 1] = 3
+        state[stone*2] = 2
+        state[12 + stone] = -1
+      end
+    end
+
+    return state
+  end
 end
+
 
 const gX = [Int.(onehot(x, 1:5)) for x in 1:5]
 const gY = [Int.(onehot(x, 1:3)) for x in 1:3]
@@ -164,8 +191,7 @@ end
 
 
 function game(net_top, net_bot)
-    state = Array{Int}(18)
-    fill_state_beginning!(state)
+    state = state_beginning()
     active_player = :top
     game_length = 0
 

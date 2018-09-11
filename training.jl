@@ -6,7 +6,7 @@ using BSON: @load
 numOfEpochs = 10 ^ 5 + 1
 const lengthOfBuffer = 300
 const r_end = 1.
-const discount = 0.8
+const discount = 0.99
 const learning_rate = 1e-4
 const length_of_game_tolerance = 200
 

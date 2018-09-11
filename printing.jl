@@ -1,8 +1,7 @@
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 
 function game_show(net_top, net_bot)
-  state = Array{Int}(6*2+6)
-  fill_state_beginning!(state)
+  state = state_beginning()
   active_player = :top
   round_number = 1
 
