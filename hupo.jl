@@ -1,7 +1,6 @@
 using Flux
 using Flux: onehot
-using StatsBase
-# using Distributions
+using Distributions: Categorical
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 include("printing.jl")
@@ -18,33 +17,14 @@ function state_beginning(level = :original)
   elseif level == :dummy
     return [3; 2; 1; 2; 3; 2; 3; 2; 5; 2; 3; 2; -1; 2; -1; -1; 0; -1]
   elseif level == :random
-    state = zeros(Int, 18)
-    stones1 = sample(1:3, rand(1:3), replace = false)
-    stones2 = sample(4:6, rand(1:3), replace = false)
-    numOfStones = length(stones1) + length(stones2)
-    positions = sample([1:4; 6:7; 9:10; 12:15], numOfStones, replace = false)
-    k = 0
-    for stone ∈ 1:6
-      if (stone ∈ stones1) || (stone ∈ stones2)
-        k += 1
-        (k == 1) && (state[12 + stone] = 2)
-        state[stone*2 - 1] = div(positions[k] - 1, 3) + 1
-        state[stone*2] = mod(positions[k] - 1, 3) + 1
-      else
-        state[stone*2 - 1] = 3
-        state[stone*2] = 2
-        state[12 + stone] = -1
-      end
-    end
-
-    return state
+    return rand_state()
   end
 end
 
 
 function rand_state()
   state = [3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, -1, -1, -1, -1, -1, -1] # all dead
-  positions = shuffle([(1,1), (1,2), (1,3), (2,1), (2,2), (2,3), (3,1), (3,3), (4,1), (4,2), (4,3), (5,1), (5,2), (5,3)])
+  positions = shuffle([(1,1), (1,2), (1,3), (2,1), (2,3), (3,1), (3,3), (4,1), (4,3), (5,1), (5,2), (5,3)])
 
   n_our_live_stones = rand(Categorical([0.1, 0.2, 0.7]))
   our_live_stones = shuffle(1:3)[1:n_our_live_stones]
@@ -54,7 +34,7 @@ function rand_state()
   end
   state[12 + our_live_stones[1]] = 2 # active stone
 
-  n_their_live_stones = rand(Categorical([0.3, 0.3, 0.4]))
+  n_their_live_stones = rand(Categorical([0.1, 0.2, 0.7]))
   their_live_stones = shuffle(4:6)[1:n_their_live_stones]
   for i ∈ their_live_stones
     state[i + 12] = 0

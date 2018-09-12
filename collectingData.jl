@@ -16,9 +16,8 @@ function memory_buffer(N::Int)
 end
 
 
-function game!(net_top, net_bot, mb::memory_buffer,
-               k::Int,  r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
-  state = state_beginning(:random)
+function game!(net_top, net_bot, mb, k, r_end, discount, length_of_game_tolerance, level)
+  state = state_beginning(level)
   active_player = :top
   k_init = k
   won = Symbol()
@@ -57,12 +56,11 @@ function game!(net_top, net_bot, mb::memory_buffer,
 end
 
 
-function collectData(net_top, net_bot, lengthOfBuffer::Int = 300,
-                     r_end::Float64 = 1., discount::Float64 = 0.8, length_of_game_tolerance::Int = 500)
+function collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
   mb = memory_buffer(lengthOfBuffer)
   k = 1
   while k <= mb.N
-    k = game!(net_top, net_bot, mb, k, r_end, discount, length_of_game_tolerance)
+    k = game!(net_top, net_bot, mb, k, r_end, discount, length_of_game_tolerance, level)
   end
 
   data = mb.states, mb.actions, (mb.rewards .- mean(mb.rewards))./std(mb.rewards)

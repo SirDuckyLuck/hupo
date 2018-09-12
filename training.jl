@@ -23,19 +23,13 @@ function loss(state, action, reward)
   -log(p + 1e-8) * reward
 end
 
-# function signal_handler(sig::Cint)::Void
-#     global numOfEpochs = 0
-#     return
-# end
-# signal_handler_c = cfunction(signal_handler, Void, (Cint,))
-# ccall(:signal, Cint, (Cint, Ptr{Void}), 2, signal_handler_c)
 
-
-function train_hupo!()
+function train_hupo!(n_epochs = numOfEpochs, level = :original)
+  println("training $n_epochs epochs, level = $level")
   opt = SGD(Flux.params(net_top), learning_rate)
 
   epoch = 0
-  while epoch < numOfEpochs
+  while epoch < n_epochs
     #check against random net
     if epoch % 1000 == 0
       println("Epoch: $(epoch)")
@@ -43,7 +37,7 @@ function train_hupo!()
     end
 
     epoch += 1
-    data = collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance)
+    data = collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
 
     Flux.train!(loss, [(transformState(data[1][:,i]),data[2][i],data[3][i]) for i in 1:lengthOfBuffer], opt)
 
