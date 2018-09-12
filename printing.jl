@@ -1,20 +1,22 @@
+include("UnicodeGrids.jl")
+using .UnicodeGrids
+
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
+const d_used_stones = Dict(1 => "₁", 2 => "₂", 3 => "₃", 4 => "₄", 5 => "₅", 6 => "₆")
+
 
 function game_show(net_top, net_bot)
   state = state_beginning()
   active_player = :top
-  round_number = 1
+  round_number = 0
 
   println()
   println("Round $(round_number)")
   print_state(state)
-  println()
-  println("press <Enter>")
+  print_action_probs(get_action_probs(state))
+  println("press <Enter>\n\n\033[2A")
 
   while true
-    readline()
-    clear(16)
-
     idx = get_active_stone(state)
     pos = (state[2*idx - 1], state[2*idx])
 
@@ -25,16 +27,18 @@ function game_show(net_top, net_bot)
     apply_pass!(state, active_stone, pass)
     won, active_player = check_state(state)
 
+    round_number += 1
+    readline()
+    clear(16)
     println("Round $(round_number)")
     print_state(state)
+    print_action_probs(get_action_probs(state))
     println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
-    active_player == :top ? println(get_probabilities(state, net_top)) : println(get_probabilities(state, net_bot))
 
     if won ∈ (:top_player_won, :bottom_player_won)
-        println(won)
-        break
+      println(won)
+      break
     end
-    round_number += 1
   end
 end
 
@@ -42,15 +46,15 @@ end
 function print_state(state::Array{Int})
   M = fill(" ", 5, 3)
   M[3,2] = "x"
+  x, y = 0, 0
   for i in 1:6
     state[12+i] == -1 && continue
     c = string(i)
-    state[12+i] == 1 && (c = aesRed * c * aesClear)
-    state[12+i] == 2 && (c = aesBold * aesYellow * c * aesClear)
-    id = i*2-1
-    M[state[id],state[id+1]] = c
+    state[12+i] == 1 && (c = d_used_stones[i])
+    state[12+i] == 2 && ((x, y) = (state[2i-1], state[2i]))
+    M[state[2i-1], state[2i]] = c
   end
-  print_grid(M)
+  println(grid(M, (x, y)))
 end
 
 
@@ -60,15 +64,30 @@ function clear(n::Int)
 end
 
 
-function get_probabilities(state::Array{Int}, net, k::Int = 3)
-  p = policy(state, net)
-  v = Array{Any}(0,3)
+function get_action_probs(state)
+  active_player = get_active_player(state)
+  net = active_player == :top ? net_top : net_bot
+  return policy(state, net)
+end
 
-  for i in eachindex(p)
-    if p[i] > 0
-      v = vcat(v, [p[i] idx2MovePass(i)[1] idx2MovePass(i)[2]])
-    end
+
+function print_action_probs(probs, width = 80)
+  perm = sortperm(probs, rev = true)
+  sb = ""
+  width_left = width
+  p_left = 1.0
+  for (i, a) ∈ enumerate(perm)
+    p = probs[a]
+    move, pass = idx2MovePass(a)
+    c = i % 2 == 0 ? "\e[37m\e[40m" : "\e[30m\e[47m"
+    w = min(ceil(Int, p / p_left * width_left), width_left)
+    w == 0 && break
+    s = w ≥ 3 ? "$(d_moves[move]) $pass" : ""
+    sb *= c * rpad(s, w)
+    p_left -= p
+    width_left -= w
+    width_left == 0 && break
   end
-
-  v[sortperm(-v[:,1])[1:min(k,size(v,1))], :]
+  sb *= " " ^ width_left * "\e[0m"
+  println(sb)
 end

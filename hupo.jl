@@ -1,5 +1,3 @@
-include("UnicodeGrids.jl")
-using .UnicodeGrids
 using Flux
 using Flux: onehot
 using StatsBase
