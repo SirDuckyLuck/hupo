@@ -29,7 +29,7 @@ function loss(state::Vector{Int}, action, reward)
 end
 
 
-function train_hupo!(n_epochs = numOfEpochs, level = :original)
+function train_hupo!(;n_epochs = numOfEpochs, level = :original)
   println("training $n_epochs epochs, level = $level")
   opt = SGD(Flux.params(net_top), learning_rate)
   # opt = ADAM(Flux.params(net_top))
