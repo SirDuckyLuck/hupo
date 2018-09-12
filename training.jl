@@ -38,10 +38,8 @@ function train_hupo!()
   while epoch < numOfEpochs
     #check against random net
     if epoch % 1000 == 0
-      dummy_games = [game(net_top, net_bot) for i in 1:1000]
-      net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
-      avg_length = mean(x[2] for x in dummy_games)
-      println("Epoch: $(epoch), net_top won $net_top_wins against random net in $avg_length rounds")
+      println("Epoch: $(epoch)")
+      test_models(net_top, net_bot)
     end
 
     epoch += 1
@@ -58,17 +56,34 @@ function train_hupo!()
 end
 
 
-function save_models()
-  @save joinpath(@__DIR__,"net_top.bson") net_top
-  @save joinpath(@__DIR__,"net_bot.bson") net_bot
+function save_models(net_top, net_bot, name)
+  @save joinpath(@__DIR__, "net_top$name.bson") net_top
+  @save joinpath(@__DIR__, "net_bot$name.bson") net_bot
 end
 
-
-function play()
-  @load joinpath(@__DIR__,"net_top.bson") net_top
-  @load joinpath(@__DIR__,"net_bot.bson") net_bot
-  game_show(net_top, net_bot)
+function load_models!(name = "")
+  global net_top, net_bot
+  @load joinpath(@__DIR__, "net_top$name.bson") net_top
+  @load joinpath(@__DIR__, "net_bot$name.bson") net_bot
 end
 
+function test_models(net_top, net_bot)
+  dummy_games = [game(net_top, net_bot) for i in 1:1000]
+  net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
+  avg_length = mean(x[2] for x in dummy_games)
+  println("net_top won $net_top_wins against random net in $avg_length rounds")
+end
 
-println("Use one of these: train_hupo!(), save_models() and play()")
+macro save_models(name = "")
+  :(save_models(net_top, net_bot, $name))
+end
+
+macro test_models()
+  :(test_models(net_top, net_bot))
+end
+
+macro play()
+  :(game_show(net_top, net_bot))
+end
+
+println("Use one of these: train_hupo!(), @save_models, load_models!(), @test_models, @play")
