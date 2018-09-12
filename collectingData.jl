@@ -65,7 +65,7 @@ function collectData(net_top, net_bot, lengthOfBuffer::Int = 300,
     k = game!(net_top, net_bot, mb, k, r_end, discount, length_of_game_tolerance)
   end
 
-  data = mb.states, mb.actions, mb.rewards #(mb.rewards .- mean(mb.rewards))./std(mb.rewards)
+  data = mb.states, mb.actions, (mb.rewards .- mean(mb.rewards))./std(mb.rewards)
 end
 
 
