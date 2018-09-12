@@ -44,11 +44,11 @@ function game!(net_top, net_bot, mb::memory_buffer,
 
     if won ∈ (:top_player_won, :bottom_player_won)
       if k_init + game_length <= mb.N
-        reward = (discount .^ ((k - k_init - 1):-1:0)) .* (r_end / game_length)
+        reward = (discount .^ ((k - k_init - 1):-1:0)) .* r_end
         if won == :top_player_won
             mb.rewards[k_init:(k - 1)] .+= reward
         else
-            mb.rewards[k_init:(k - 1)] .-= (r_end / game_length)
+            mb.rewards[k_init:(k - 1)] .-= reward
         end
       end
       return k
