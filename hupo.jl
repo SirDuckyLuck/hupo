@@ -1,6 +1,7 @@
 using Flux
 using Flux: onehot
 using StatsBase
+# using Distributions
 
 @enum Move up = 1 right = 2 down = 3 left = 4 out = 5
 include("printing.jl")
@@ -38,6 +39,29 @@ function state_beginning(level = :original)
 
     return state
   end
+end
+
+
+function rand_state()
+  state = [3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, -1, -1, -1, -1, -1, -1] # all dead
+  positions = shuffle([(1,1), (1,2), (1,3), (2,1), (2,2), (2,3), (3,1), (3,3), (4,1), (4,2), (4,3), (5,1), (5,2), (5,3)])
+
+  n_our_live_stones = rand(Categorical([0.1, 0.2, 0.7]))
+  our_live_stones = shuffle(1:3)[1:n_our_live_stones]
+  for i ∈ our_live_stones
+    state[i + 12] = rand(0:1)
+    state[2i - 1], state[2i] = pop!(positions)
+  end
+  state[12 + our_live_stones[1]] = 2 # active stone
+
+  n_their_live_stones = rand(Categorical([0.3, 0.3, 0.4]))
+  their_live_stones = shuffle(4:6)[1:n_their_live_stones]
+  for i ∈ their_live_stones
+    state[i + 12] = 0
+    state[2i - 1], state[2i] = pop!(positions)
+  end
+
+  state
 end
 
 
