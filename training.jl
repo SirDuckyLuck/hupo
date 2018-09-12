@@ -18,7 +18,12 @@ const net_top = Chain(
 const net_bot(x) = softmax(param(ones(30, 72)) * x)
 
 
-function loss(state, action, reward)
+function loss(states::Matrix{Int}, actions, rewards)
+  Flux.crossentropy(net_top(states)[Flux.onehotbatch(actions, 1:30)] .+ 1e-8, rewards)
+end
+
+
+function loss(state::Vector{Int}, action, reward)
   p = net_top(state)[action]
   -log(p + 1e-8) * reward
 end
@@ -27,6 +32,7 @@ end
 function train_hupo!(n_epochs = numOfEpochs, level = :original)
   println("training $n_epochs epochs, level = $level")
   opt = SGD(Flux.params(net_top), learning_rate)
+  # opt = ADAM(Flux.params(net_top))
 
   epoch = 0
   while epoch < n_epochs
@@ -39,7 +45,8 @@ function train_hupo!(n_epochs = numOfEpochs, level = :original)
     epoch += 1
     data = collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
 
-    Flux.train!(loss, [(transformState(data[1][:,i]),data[2][i],data[3][i]) for i in 1:lengthOfBuffer], opt)
+    # Flux.train!(loss, [(data[1][:,i],data[2][i],data[3][i]) for i in 1:lengthOfBuffer], opt)
+    Flux.train!(loss, [(data...)], opt)
 
     if (epoch % 100 == 0)
       println("$epoch")

@@ -12,7 +12,7 @@ end
 
 
 function memory_buffer(N::Int)
-  memory_buffer(N, zeros(Int, 18, N), zeros(N), zeros(N))
+  memory_buffer(N, zeros(Int, 72, N), zeros(N), zeros(N))
 end
 
 
@@ -29,7 +29,7 @@ function game!(net_top, net_bot, mb, k, r_end, discount, length_of_game_toleranc
                  sample_action(state, net_top) :
                  sample_action(state, net_bot)
     if (active_player == :top) && (k <= mb.N)
-      mb.states[:,k] = state
+      mb.states[:,k] = transformState(state)
       mb.actions[k] = action2idx(move, pass)
       k += 1
     end
