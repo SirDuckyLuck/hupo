@@ -79,7 +79,7 @@ function print_action_probs(probs, width = 80)
   for (i, a) ∈ enumerate(perm)
     p = probs[a]
     move, pass = idx2MovePass(a)
-    c = i % 2 == 0 ? "\e[37m\e[40m" : "\e[30m\e[47m"
+    c = i % 2 == 0 ? "\e[32m\e[41m" : "\e[31m\e[42m"
     w = min(ceil(Int, p / p_left * width_left), width_left)
     w == 0 && break
     s = w ≥ 3 ? "$(d_moves[move]) $pass" : ""
