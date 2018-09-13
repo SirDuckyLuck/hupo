@@ -10,31 +10,28 @@ const discount = 0.99
 const learning_rate = 1e-4
 const length_of_game_tolerance = 200
 
-net_top = Chain(
+G = [Chain(
     Dense(72, 100, relu),
     Dense(100, 100, relu),
     Dense(100, 30),
-    softmax)
-# net_bot(x) = softmax(param(ones(30, 72)) * x)
-net_bot = Chain(
-    Dense(72, 30),
-    softmax)
+    softmax)]
 
 
 function loss(states::Matrix{Int}, actions, rewards)
-  Flux.crossentropy(net_top(states)[Flux.onehotbatch(actions, 1:30)] .+ 1e-8, rewards)
+  Flux.crossentropy(candidate(states)[Flux.onehotbatch(actions, 1:30)] .+ 1e-8, rewards)
 end
 
 
 function loss(state::Vector{Int}, action, reward)
-  p = net_top(state)[action]
+  p = candidate(state)[action]
   -log(p + 1e-8) * reward
 end
 
 
 function train_hupo!(;n_epochs = numOfEpochs, level = :original)
   println("training $n_epochs epochs, level = $level")
-  opt = SGD(Flux.params(net_top), learning_rate)
+  candidate = deepcopy(G[1])
+  opt = SGD(Flux.params(candidate), learning_rate)
   # opt = ADAM(Flux.params(net_top))
 
   epoch = 0
@@ -42,19 +39,22 @@ function train_hupo!(;n_epochs = numOfEpochs, level = :original)
     #check against random net
     if epoch % 1000 == 0
       println("Epoch: $(epoch)")
-      test_models(net_top, net_bot)
+      wins = test_candidate(candidate, G)
+      if wins >= 550
+        push!(G, candidate)
+        candidate = deepcopy(G[end])
+        opt = SGD(Flux.params(candidate), learning_rate)
+      end
     end
 
     epoch += 1
-    data = collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
+    data = collectData(candidate, G[rand(1:length(G))], lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
 
     # Flux.train!(loss, [(data[1][:,i],data[2][i],data[3][i]) for i in 1:lengthOfBuffer], opt)
     Flux.train!(loss, [(data...)], opt)
 
     if (epoch % 100 == 0)
       println("$epoch")
-      # known_state = [1; 1; 1; 2; 1; 3; 5; 1; 5; 2; 5; 3; 0; 2; 0; 0; 0; 0]
-      # n0 = net_top_move(transformState(known_state)).data
     end
   end
 end
@@ -65,18 +65,31 @@ function save_models(net_top, net_bot, name)
   @save joinpath(@__DIR__, "net_bot$name.bson") net_bot
 end
 
+
 function load_models!(name = "")
   global net_top, net_bot
   @load joinpath(@__DIR__, "net_top$name.bson") net_top
   @load joinpath(@__DIR__, "net_bot$name.bson") net_bot
 end
 
+
 function test_models(net_top, net_bot)
-  dummy_games = [game(net_player(net_top), net_player(net_bot)) for i in 1:1000]
-  net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
-  avg_length = mean(x[2] for x in dummy_games)
-  println("net_top won $net_top_wins against random net in $avg_length rounds")
+  test_games = [game(net_player(net_top), net_player(net_bot)) for i in 1:1000]
+  net_top_wins = sum(x[1] == :top_player_won for x in test_games)
+  avg_length = mean(x[2] for x in test_games)
+  println("top net won $net_top_wins against bottom net in $avg_length rounds")
 end
+
+
+function test_candidate(candidate, G)
+  test_games = [game(net_player(candidate), net_player(G[rand(1:length(G))])) for i in 1:1000]
+  candidate_wins = sum(x[1] == :top_player_won for x in test_games)
+  avg_length = mean(x[2] for x in test_games)
+  println("candidate won $candidate_wins against previous generations in $avg_length rounds")
+
+  candidate_wins
+end
+
 
 macro save_models(name = "")
   :(save_models(net_top, net_bot, $name))
