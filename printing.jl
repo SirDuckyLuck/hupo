@@ -25,7 +25,8 @@ function game_show(net_top, net_bot)
            sample_action(state, net_bot)
     active_stone = apply_move!(state, move)
     apply_pass!(state, active_stone, pass)
-    won, active_player = check_state(state)
+    won = check_state(state)
+    active_player = get_active_player(state)
 
     round_number += 1
     readline()
@@ -73,7 +74,7 @@ end
 
 function print_action_probs(probs, width = 80)
   perm = sortperm(probs, rev = true)
-  sb = ""
+  sb = "\e[1m"
   width_left = width
   p_left = 1.0
   for (i, a) ∈ enumerate(perm)

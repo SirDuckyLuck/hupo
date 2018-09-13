@@ -10,12 +10,15 @@ const discount = 0.99
 const learning_rate = 1e-4
 const length_of_game_tolerance = 200
 
-const net_top = Chain(
+net_top = Chain(
     Dense(72, 100, relu),
     Dense(100, 100, relu),
     Dense(100, 30),
     softmax)
-const net_bot(x) = softmax(param(ones(30, 72)) * x)
+# net_bot(x) = softmax(param(ones(30, 72)) * x)
+net_bot = Chain(
+    Dense(72, 30),
+    softmax)
 
 
 function loss(states::Matrix{Int}, actions, rewards)
@@ -69,7 +72,7 @@ function load_models!(name = "")
 end
 
 function test_models(net_top, net_bot)
-  dummy_games = [game(net_top, net_bot) for i in 1:1000]
+  dummy_games = [game(net_player(net_top), net_player(net_bot)) for i in 1:1000]
   net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
   avg_length = mean(x[2] for x in dummy_games)
   println("net_top won $net_top_wins against random net in $avg_length rounds")

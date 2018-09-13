@@ -8,7 +8,7 @@ include("collectingData.jl")
 # probability: up+1, up+2, ... up+6, right+1, right+2, ..., right+6m ..., out+6
 
 get_active_stone(state::Array{Int}) = findfirst(view(state, 13:18), 2)
-get_active_player(state::Array{Int}) = get_active_stone(state) ∈ (1, 2, 3) ? :top : :bot
+get_active_player(state::Array{Int}) = get_active_stone(state) < 4 ? :top : :bot
 
 
 function state_beginning(level = :original)
@@ -74,11 +74,21 @@ end
 
 
 function policy(state::Array{Int}, net)
-  p = net(transformState(state)).data .+ 1e-6
-  zero_impossible_moves!(p, state)
-  p ./= sum(p)
-
-  p
+  if get_active_player(state) == :top
+    p = net(transformState(state)).data .+ 1e-6
+    zero_impossible_moves!(p, state)
+    p ./= sum(p)
+    return p
+  else
+    state = invert_state(state)
+    p = net(transformState(state)).data .+ 1e-6
+    zero_impossible_moves!(p, state)
+    p[1:6], p[13:18] = p[18:-1:13], p[6:-1:1]
+    p[7:12], p[19:24] = p[24:-1:19], p[12:-1:7]
+    p[25:30] = p[30:-1:25]
+    p ./= sum(p)
+    return p
+  end
 end
 
 
@@ -177,35 +187,56 @@ function check_state(state::Array{Int})
   won = Symbol()
 
   if state[1:2] == [4;2] || state[3:4] == [4;2] || state[5:6] == [4;2] || state[16:18] == [-1; -1; -1]
-      won = :top_player_won
+    won = :top_player_won
   elseif state[7:8] == [2;2] || state[9:10] == [2;2] || state[11:12] == [2;2] || state[13:15] == [-1; -1; -1]
-      won = :bottom_player_won
+    won = :bottom_player_won
   end
 
-  active_player = get_active_player(state)
-
-  won, active_player
+  won
 end
 
 
-function game(net_top, net_bot)
-    state = state_beginning()
-    active_player = :top
-    game_length = 0
+function apply_action!(state, action)
+  move, pass = action
+  active_stone = apply_move!(state, move)
+  apply_pass!(state, active_stone, pass)
+end
 
-    while true
-      game_length += 1
-      move, pass = active_player == :top ?
-                   sample_action(state, net_top) :
-                   sample_action(state, net_bot)
-      active_stone = apply_move!(state, move)
-      apply_pass!(state, active_stone, pass)
-      won, active_player = check_state(state)
 
-      if won ∈ [:top_player_won :bottom_player_won]
-          return won, game_length
-      end
+net_player(net) = (state -> sample_action(state, net))
+
+
+function invert_state(state)
+  state = copy(state)
+  state[13:18] = state[18:-1:13]
+  for i ∈ 1:2:11
+    state[i] = 6 - state[i]
+  end
+  for i ∈ 2:2:12
+    state[i] = 4 - state[i]
+  end
+  state[1:2], state[11:12] = state[11:12], state[1:2]
+  state[3:4], state[9:10] = state[9:10], state[3:4]
+  state[5:6], state[7:8] = state[7:8], state[5:6]
+  state
+end
+
+
+function game(player_top, player_bottom; level = :original)
+  state = state_beginning(level)
+  active_player = player_top
+  game_length = 0
+
+  while true
+    game_length += 1
+    action = active_player(state)
+    apply_action!(state, action)
+    won = check_state(state)
+    if won ∈ [:top_player_won :bottom_player_won]
+      return won, game_length
     end
+    active_player = get_active_stone(state) < 4 ? player_top : player_bottom
+  end
 end
 
 # game(net_top, net_bot)

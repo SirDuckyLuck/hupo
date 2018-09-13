@@ -35,7 +35,8 @@ function game!(net_top, net_bot, mb, k, r_end, discount, length_of_game_toleranc
     end
     active_stone = apply_move!(state, move)
     apply_pass!(state, active_stone, pass)
-    won, active_player = check_state(state)
+    won = check_state(state)
+    active_player = get_active_player(state)
 
     if k - k_init > length_of_game_tolerance
       won = :bottom_player_won
