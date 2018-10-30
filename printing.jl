@@ -55,7 +55,7 @@ function print_state(state::Array{Int})
     state[12+i] == 2 && ((x, y) = (state[2i-1], state[2i]))
     M[state[2i-1], state[2i]] = c
   end
-  println(grid(M, (x, y)))
+  println(UnicodeGrids.grid(M, (x, y)))
 end
 
 
