@@ -65,13 +65,13 @@ function game!(net_top, net_bot, mb_top, mb_bot, r_end, discount, length_of_game
       mb = mb_bot
       if mb.k <= mb.N
         reward = (discount .^ ((mb.k - mb.k_init - 1):-1:0)) .* r_end
-        if won == :top_player_won
+        if won == :bottom_player_won
             mb.rewards[mb.k_init:(mb.k - 1)] .+= reward
         else
             mb.rewards[mb.k_init:(mb.k - 1)] .-= reward
         end
       end
-      return
+      return won, game_length
     end
   end
 end
@@ -80,8 +80,17 @@ end
 function collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
   mb_top = memory_buffer(lengthOfBuffer)
   mb_bot = memory_buffer(lengthOfBuffer)
+
+  net_top_wins = 0
+  n_games = 0
+  sum_game_lenghts = 0
+
   while (mb_top.k <= mb_top.N) || (mb_bot.k <= mb_bot.N)
-    game!(net_top, net_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
+    won, game_length = game!(net_top, net_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
+
+    net_top_wins += won == :top_player_won ? 1 : 0
+    n_games += 1
+    sum_game_lenghts += game_length
   end
 
   global mb_top = mb_top
@@ -89,7 +98,7 @@ function collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_o
 
   mb_top.rewards = (mb_top.rewards .- mean(mb_top.rewards))./std(mb_top.rewards)
   mb_bot.rewards = (mb_bot.rewards .- mean(mb_bot.rewards))./std(mb_bot.rewards)
-  data = mb_top, mb_bot
+  data = (mb_top, mb_bot, (n_games, net_top_wins, sum_game_lenghts))
 end
 
 

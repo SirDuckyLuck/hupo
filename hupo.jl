@@ -80,12 +80,14 @@ function policy(state::Array{Int}, net)
     p ./= sum(p)
     return p
   else
-    state = invert_state(state)
     p = net(transformState(state)).data .+ 1e-6
     zero_impossible_moves!(p, state)
-    p[1:6], p[13:18] = p[18:-1:13], p[6:-1:1]
-    p[7:12], p[19:24] = p[24:-1:19], p[12:-1:7]
-    p[25:30] = p[30:-1:25]
+    # state = invert_state(state)
+    # p = net(transformState(state)).data .+ 1e-6
+    # zero_impossible_moves!(p, state)
+    # p[1:6], p[13:18] = p[18:-1:13], p[6:-1:1]
+    # p[7:12], p[19:24] = p[24:-1:19], p[12:-1:7]
+    # p[25:30] = p[30:-1:25]
     p ./= sum(p)
     return p
   end

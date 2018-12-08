@@ -14,7 +14,8 @@ const length_of_game_tolerance = 200
 
 function init_models()
   global net_top = Chain(
-      Dense(72, 30),
+      Dense(72, 100, relu),
+      Dense(100,30),
       softmax)
   # global net_top = Chain(
   #     Dense(72, 100, relu),
@@ -23,7 +24,8 @@ function init_models()
   #     softmax)
   # net_bot(x) = softmax(param(ones(30, 72)) * x)
   global net_bot = Chain(
-      Dense(72, 30),
+      Dense(72, 100),
+      Dense(100,30),
       softmax)
 end
 
@@ -73,7 +75,7 @@ function train_hupo!(;n_epochs = numOfEpochs, train_bot = false, level = :origin
 
     epoch += 1
 
-    data_top, data_bot = collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
+    data_top, data_bot, (n_games, net_top_wins, sum_game_lenghts) = collectData(net_top, net_bot, lengthOfBuffer, r_end, discount, length_of_game_tolerance, level)
 
     global d_bot = data_bot
     global d_top = data_top
@@ -125,6 +127,18 @@ function test_models(net_top, net_bot)
   net_top_wins = sum(x[1] == :top_player_won for x in dummy_games)
   avg_length = mean(x[2] for x in dummy_games)
   println("net_top won $net_top_wins against net_bot in $avg_length rounds")
+end
+
+function test_models_loss(net_top,net_bot)
+  data_top, data_bot, (n_games, net_top_wins, sum_game_lenghts) = collectData(net_top, net_bot, 50*1000, r_end, discount, length_of_game_tolerance, :original)
+  l_bot = loss_bot(data_bot.states, data_bot.actions, data_bot.rewards).data
+  l_top = loss(data_top.states, data_top.actions, data_top.rewards).data
+
+  l_top = round(l_top/ n_games,1)
+  l_bot = round(l_bot/ n_games,1)
+  net_top_win = round(net_top_wins / n_games * 100,1)
+  avg_length = round(sum_game_lenghts / n_games,1)
+  println("net_top won $net_top_win % with loss $l_top against net_bot with loss $l_bot in $avg_length rounds")
 end
 
 function test_models_swapped(net_top, net_bot)
