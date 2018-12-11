@@ -8,6 +8,10 @@ mutable struct sval_memory_buffer
   rewards::Vector{Float64}
 end
 
+struct Player
+  net
+  transform
+end
 
 function action2idx(move::Move, pass::Int)
   (Int(move) - 1)*6 + pass
@@ -64,6 +68,32 @@ function sval_policy(state::Array{Int}, sval::Dict)
   idx
 end
 
+function sval_policy(state::Array{Int}, player::Player)
+  p = ones(30)
+  zero_impossible_moves!(p,state)
+  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
+
+  r = rand()
+  if r < epsilon
+    i = Int(ceil(rand()*length(possible_actions)))
+    idx = possible_actions[i]
+  else
+    # choose state according to policy
+    m = Matrix{Int}(length(player.transform(state)),length(possible_actions))
+    for i in 1:length(possible_actions)
+      new_state = copy(state)
+      apply_action!(new_state,idx2MovePass(possible_actions[i]))
+      m[:,i] = player.transform(new_state)
+    end
+    svals = player.net(m)
+
+    idx = possible_actions[indmax(svals)]
+  end
+
+  idx
+end
+
+
 function sval_policy(state::Array{Int}, sval)
   p = ones(30)
   zero_impossible_moves!(p,state)
@@ -89,18 +119,12 @@ function sval_policy(state::Array{Int}, sval)
   idx
 end
 
-
 const length_of_game_tolerance = 300
 const discount = 0.95
 const r_end = 1.
 const alpha = 0.1
 
 
-global sval_top = Dict{UInt64,Float64}()
-global count_sval_top = Dict{UInt64,Int}()
-
-global sval_bot = Dict{UInt64,Float64}()
-global count_sval_bot = Dict{UInt64,Int}()
 
 global sval_net_top = Chain(
     Dense(72, 100, relu),
@@ -114,11 +138,14 @@ global sval_net_bot = Chain(
 global opt_bot = ADAM(Flux.params(sval_net_bot))
 
 
-function loss_online(state_net::Array{Int}, reward)
-  (sval_net_top(state_net)[1,1] - reward)^2
-end
-function train_net_online!(net,mb,opt)
-  Flux.train!(loss_online, [(transformState(mb.states[:,i]),mb.rewards[i]) for i in 1:mb.k], opt)
+global player_top = Player(sval_net_top,transformState)
+
+function train_net!(p::Player,opt,mb)
+  m = Matrix{Int}(length(p.transform(rand_state())),mb.k)
+  for i in 1:mb.k
+    m[:,i] = p.transform(mb.states[:,i])
+  end
+  Flux.train!(loss(p.net), [(m, mb.rewards[1:mb.k])], opt)
 end
 
 function loss(net)
@@ -130,30 +157,6 @@ function train_net!(net,opt,mb)
     m[:,i] = transformState(mb.states[:,i])
   end
   Flux.train!(loss(net), [(m, mb.rewards[1:mb.k])], opt)
-end
-
-
-function loss_bot(states_net::Matrix{Int}, rewards)
-  sum((sval_net_bot(states_net)' - rewards).^2)
-end
-function train_net_bot!(mb)
-  m = Matrix{Int}(72,mb.k)
-  for i in 1:mb.k
-    m[:,i] = transformState(mb.states[:,i])
-  end
-  Flux.train!(loss_bot, [(m, mb.rewards[1:mb.k])], opt_bot)
-end
-
-
-function loss_top(states_net::Matrix{Int}, rewards)
-  sum((sval_net_top(states_net)' - rewards).^2)
-end
-function train_net_top!(mb)
-  m = Matrix{Int}(72,mb.k)
-  for i in 1:mb.k
-    m[:,i] = transformState(mb.states[:,i])
-  end
-  Flux.train!(loss_top, [(m, mb.rewards[1:mb.k])], opt_top)
 end
 
 const replay_size = 100000
@@ -185,6 +188,11 @@ function train_net_top_replay!(mb)
   Flux.train!(loss_top, [(m_replay[:,rand_i], replay_rewards[rand_i])], opt_top)
 end
 
+global sval_top = Dict{UInt64,Float64}()
+global count_sval_top = Dict{UInt64,Int}()
+
+global sval_bot = Dict{UInt64,Float64}()
+global count_sval_bot = Dict{UInt64,Int}()
 
 function train_temporal_difference!(sval,mb)
   for i = mb.k-1:-1:1
@@ -249,9 +257,6 @@ function train_monte_carlo_online!(sval,mb)
 end
 
 function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = false, level = :original)
-  top_wins = 0
-  n_games = 0
-  sum_game_lenghts = 0
 
   epoch = 0
   while epoch <= n_epochs
@@ -266,7 +271,7 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     mb_top = sval_memory_buffer(length_of_game_tolerance)
     mb_bot = sval_memory_buffer(length_of_game_tolerance)
 
-    won, game_length = sval_game!(sval_net_top, sval_net_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
+    won, game_length = sval_game!(player_top, sval_net_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
 
     top_wins += won == :top_player_won ? 1 : 0
     n_games += 1
@@ -277,10 +282,10 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     global mb_bot = mb_bot
 
     if train_top
-      train_net!(sval_net_top,opt_top,mb_top)
+      train_net!(player_top, opt_top, mb_top)
     end
     if train_bot
-      train_net_bot!(mb_bot)
+      train_net!(sval_net_bot, opt_bot, mb_bot)
     end
 
     if epoch % 1000 == 0
