@@ -6,10 +6,19 @@ mutable struct sval_memory_buffer
   k::Int
   states::Matrix{Int}
   rewards::Vector{Float64}
+  start_states::Matrix{Int}
+  actions::Vector{Int}
 end
 
-struct Player
+struct NetPlayer
   net
+  opt
+  transform
+end
+
+struct ActionPlayer
+  net
+  opt
   transform
 end
 
@@ -18,7 +27,7 @@ function action2idx(move::Move, pass::Int)
 end
 
 function sval_memory_buffer(N::Int)
-  sval_memory_buffer(N, 0, zeros(Int, 18, N), zeros(N))
+  sval_memory_buffer(N, 0, zeros(Int, 18, N), zeros(N), zeros(Int, 18, N), zeros(N))
 end
 
 function state2hash(state::Array{Int})
@@ -68,7 +77,7 @@ function sval_policy(state::Array{Int}, sval::Dict)
   idx
 end
 
-function sval_policy(state::Array{Int}, player::Player)
+function sval_policy(state::Array{Int}, player::NetPlayer)
   p = ones(30)
   zero_impossible_moves!(p,state)
   possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
@@ -93,30 +102,13 @@ function sval_policy(state::Array{Int}, player::Player)
   idx
 end
 
-
-function sval_policy(state::Array{Int}, sval)
-  p = ones(30)
-  zero_impossible_moves!(p,state)
-  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
+function sval_policy(state::Array{Int}, player::ActionPlayer)
+  p = player.net(player.transform(state)).data .+ 1e-6
+  zero_impossible_moves!(p, state)
+  p ./= sum(p)
 
   r = rand()
-  if r < epsilon
-    i = Int(ceil(rand()*length(possible_actions)))
-    idx = possible_actions[i]
-  else
-    # choose state according to policy
-    m = Matrix{Int}(length(transformState(state)),length(possible_actions))
-    for i in 1:length(possible_actions)
-      new_state = copy(state)
-      apply_action!(new_state,idx2MovePass(possible_actions[i]))
-      m[:,i] = transformState(new_state)
-    end
-    svals = sval(m)
-
-    idx = possible_actions[indmax(svals)]
-  end
-
-  idx
+  idx = findfirst(x -> x >= r, cumsum(p))
 end
 
 const length_of_game_tolerance = 300
@@ -124,39 +116,50 @@ const discount = 0.95
 const r_end = 1.
 const alpha = 0.1
 
+global action_net_top = Chain(
+    Dense(72, 100, relu),
+    Dense(100,30),
+    softmax)
+
+global action_player_top = ActionPlayer(action_net_top,ADAM(Flux.params(action_net_top)),transformState)
+
+
+function loss_action(net)
+  (states_net, actions, rewards) -> Flux.crossentropy(net(states_net)[Flux.onehotbatch(actions, 1:30)] .+ 1e-8, rewards)
+end
+function train_action_net!(p::ActionPlayer,mb)
+  m = Matrix{Int}(length(p.transform(rand_state())),mb.k)
+  for i in 1:mb.k
+    m[:,i] = p.transform(mb.start_states[:,i])
+  end
+
+  # try normalizing rewards
+  mb.rewards = (mb.rewards .- mean(mb.rewards))./std(mb.rewards)
+
+  Flux.train!(loss_action(p.net), [(m, mb.actions[1:mb.k], mb.rewards[1:mb.k])], p.opt)
+end
 
 
 global sval_net_top = Chain(
     Dense(72, 100, relu),
     Dense(100,1))
     # Dense(72,1))
-global opt_top = ADAM(Flux.params(sval_net_top))
+global player_top = NetPlayer(sval_net_top,ADAM(Flux.params(sval_net_top)),transformState)
 
 global sval_net_bot = Chain(
     Dense(72, 100, relu),
     Dense(100,1))
-global opt_bot = ADAM(Flux.params(sval_net_bot))
-
-
-global player_top = Player(sval_net_top,transformState)
-
-function train_net!(p::Player,opt,mb)
-  m = Matrix{Int}(length(p.transform(rand_state())),mb.k)
-  for i in 1:mb.k
-    m[:,i] = p.transform(mb.states[:,i])
-  end
-  Flux.train!(loss(p.net), [(m, mb.rewards[1:mb.k])], opt)
-end
+global player_bot = NetPlayer(sval_net_bot,ADAM(Flux.params(sval_net_bot)),transformState)
 
 function loss(net)
   (states_net, rewards) -> sum((net(states_net)' - rewards).^2)
 end
-function train_net!(net,opt,mb)
-  m = Matrix{Int}(length(transformState(rand_state())),mb.k)
+function train_net!(p::NetPlayer,mb)
+  m = Matrix{Int}(length(p.transform(rand_state())),mb.k)
   for i in 1:mb.k
-    m[:,i] = transformState(mb.states[:,i])
+    m[:,i] = p.transform(mb.states[:,i])
   end
-  Flux.train!(loss(net), [(m, mb.rewards[1:mb.k])], opt)
+  Flux.train!(loss(p.net), [(m, mb.rewards[1:mb.k])], p.opt)
 end
 
 const replay_size = 100000
@@ -165,7 +168,7 @@ global replay_rewards = Vector{Float32}(replay_size)
 global replay_k = 0
 global replay_full = false
 
-function train_net_top_replay!(mb)
+function train_net_replay!(p::NetPlayer,mb)
   # store replay values
   global replay_k
   for i = 1:mb.k
@@ -185,7 +188,7 @@ function train_net_top_replay!(mb)
     rand_i = rand(1:replay_k,batch_size)
   end
   # train on these
-  Flux.train!(loss_top, [(m_replay[:,rand_i], replay_rewards[rand_i])], opt_top)
+  Flux.train!(loss(p.net), [(m_replay[:,rand_i], replay_rewards[rand_i])], p.opt)
 end
 
 global sval_top = Dict{UInt64,Float64}()
@@ -271,7 +274,7 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     mb_top = sval_memory_buffer(length_of_game_tolerance)
     mb_bot = sval_memory_buffer(length_of_game_tolerance)
 
-    won, game_length = sval_game!(player_top, sval_net_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
+    won, game_length = sval_game!(action_player_top, player_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
 
     top_wins += won == :top_player_won ? 1 : 0
     n_games += 1
@@ -282,10 +285,10 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     global mb_bot = mb_bot
 
     if train_top
-      train_net!(player_top, opt_top, mb_top)
+      train_action_net!(action_player_top, mb_top)
     end
     if train_bot
-      train_net!(sval_net_bot, opt_bot, mb_bot)
+      train_net!(player_bot, mb_bot)
     end
 
     if epoch % 1000 == 0
@@ -316,12 +319,15 @@ function sval_game!(sval_top, sval_bot, mb_top, mb_bot, r_end, discount, length_
       mb = mb_bot
     end
 
+    mb.k +=1
+    mb.start_states[:,mb.k] = state
+    mb.actions[mb.k] = action2idx(move, pass)
+
     active_stone = apply_move!(state, move)
     apply_pass!(state, active_stone, pass)
     won = check_state(state)
     active_player = get_active_player(state)
 
-    mb.k +=1
     mb.states[:,mb.k] = state
 
     if game_length > length_of_game_tolerance
