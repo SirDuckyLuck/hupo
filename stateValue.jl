@@ -22,6 +22,14 @@ struct ActionPlayer
   transform
 end
 
+struct ACPlayer
+  action_net
+  action_opt
+  critic_net
+  critic_opt
+  transform
+end
+
 function action2idx(move::Move, pass::Int)
   (Int(move) - 1)*6 + pass
 end
@@ -111,6 +119,15 @@ function sval_policy(state::Array{Int}, player::ActionPlayer)
   idx = findfirst(x -> x >= r, cumsum(p))
 end
 
+function sval_policy(state::Array{Int}, player::ACPlayer)
+  p = player.action_net(player.transform(state)).data .+ 1e-6
+  zero_impossible_moves!(p, state)
+  p ./= sum(p)
+
+  r = rand()
+  idx = findfirst(x -> x >= r, cumsum(p))
+end
+
 const length_of_game_tolerance = 300
 const discount = 0.95
 const r_end = 1.
@@ -122,7 +139,6 @@ global action_net_top = Chain(
     softmax)
 
 global action_player_top = ActionPlayer(action_net_top,ADAM(Flux.params(action_net_top)),transformState)
-
 
 function loss_action(net)
   (states_net, actions, rewards) -> Flux.crossentropy(net(states_net)[Flux.onehotbatch(actions, 1:30)] .+ 1e-8, rewards)
@@ -160,6 +176,29 @@ function train_net!(p::NetPlayer,mb)
     m[:,i] = p.transform(mb.states[:,i])
   end
   Flux.train!(loss(p.net), [(m, mb.rewards[1:mb.k])], p.opt)
+end
+
+
+global ac_player_top = ACPlayer(action_net_top,ADAM(Flux.params(action_net_top)),sval_net_top,ADAM(Flux.params(sval_net_top)),transformState)
+
+function train_ac_player!(p::ACPlayer,mb)
+  # train the critic net
+  m1 = Matrix{Int}(length(p.transform(rand_state())),mb.k)
+  for i in 1:mb.k
+    m1[:,i] = p.transform(mb.states[:,i])
+  end
+  Flux.train!(loss(p.critic_net), [(m1, mb.rewards[1:mb.k])], p.critic_opt)
+
+  # train the action net
+  m2 = Matrix{Int}(length(p.transform(rand_state())),mb.k)
+  for i in 1:mb.k
+    m2[:,i] = p.transform(mb.start_states[:,i])
+  end
+  # find the estimated values for these states
+  value_estimates = p.critic_net(m1)'
+  # ??? how come we have start_states and states, which ones do we take now for this
+  # the mb.rewards[1:mb.k] must be replaced in the next line
+  Flux.train!(loss_action(p.action_net), [(m2, mb.actions[1:mb.k], value_estimates)], p.action_opt)
 end
 
 const replay_size = 100000
@@ -274,7 +313,7 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     mb_top = sval_memory_buffer(length_of_game_tolerance)
     mb_bot = sval_memory_buffer(length_of_game_tolerance)
 
-    won, game_length = sval_game!(action_player_top, player_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
+    won, game_length = sval_game!(ac_player_top, player_bot, mb_top, mb_bot, r_end, discount, length_of_game_tolerance, level)
 
     top_wins += won == :top_player_won ? 1 : 0
     n_games += 1
@@ -285,7 +324,7 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     global mb_bot = mb_bot
 
     if train_top
-      train_action_net!(action_player_top, mb_top)
+      train_ac_player!(ac_player_top, mb_top)
     end
     if train_bot
       train_net!(player_bot, mb_bot)
