@@ -1,5 +1,13 @@
 
+abstract type AbstractPlayer end
+abstract type AbstractActorPlayer <: AbstractPlayer end
+abstract type AbstractStatePlayer <: AbstractPlayer end
+
 include("hupo.jl")
+
+include("actorPlayer.jl")
+include("statePlayer.jl")
+
 
 mutable struct sval_memory_buffer
   N::Int
@@ -9,12 +17,6 @@ mutable struct sval_memory_buffer
   start_states::Matrix{Int}
   actions::Vector{Int}
 end
-
-abstract type AbstractPlayer end
-
-include("actorPlayer.jl")
-include("statePlayer.jl")
-
 
 function action2idx(move::Move, pass::Int)
   (Int(move) - 1)*6 + pass
@@ -28,8 +30,6 @@ function state2hash(state::Array{Int})
   # here implement transforming state into a UInt64 integer
   return hash(state)
 end
-
-const epsilon = 0.1
 
 const length_of_game_tolerance = 300
 const discount = 0.95
@@ -68,7 +68,7 @@ global sval_bot = Dict{UInt64,Float64}()
 
 function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = false, level = :original)
 
-  player_top = ac_player_top
+  player_top = net_player_top
   player_bot = sval_bot
 
   epoch = 0

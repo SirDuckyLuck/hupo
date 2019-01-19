@@ -5,7 +5,7 @@ const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", 
 const d_used_stones = Dict(1 => "₁", 2 => "₂", 3 => "₃", 4 => "₄", 5 => "₅", 6 => "₆")
 
 
-function game_show(net_top, net_bot)
+function game_show(player_top, player_bot)
   state = state_beginning()
   active_player = :top
   round_number = 0
@@ -13,7 +13,8 @@ function game_show(net_top, net_bot)
   println()
   println("Round $(round_number)")
   print_state(state)
-  print_action_probs(get_action_probs(state))
+  p = active_player == :top ? player_top : player_bot
+  print_action_probs(state, p)
   println("press <Enter>\n\n\033[2A")
 
   while true
@@ -21,8 +22,8 @@ function game_show(net_top, net_bot)
     pos = (state[2*idx - 1], state[2*idx])
 
     move, pass = active_player == :top ?
-           sample_action(state, net_top) :
-           sample_action(state, net_bot)
+           sval_sample_action(state, player_top) :
+           sval_sample_action(state, player_bot)
     active_stone = apply_move!(state, move)
     apply_pass!(state, active_stone, pass)
     won = check_state(state)
@@ -33,7 +34,8 @@ function game_show(net_top, net_bot)
     clear(16)
     println("Round $(round_number)")
     print_state(state)
-    print_action_probs(get_action_probs(state))
+    p = active_player == :top ? player_top : player_bot
+    print_action_probs(state, p)
     println("player $idx moves $(d_moves[move])  and passes token to player $(pass)")
 
     if won ∈ (:top_player_won, :bottom_player_won)
@@ -64,15 +66,23 @@ function clear(n::Int)
   println("\033[$(n)A" * "\033[K\n" ^ n * "\033[$(n)A")
 end
 
+#
+# function get_action_probs(state)
+#   active_player = get_active_player(state)
+#   p = active_player == :top ? player_top : player_bot
+#   return action_probs(state, p)
+# end
 
-function get_action_probs(state)
-  active_player = get_active_player(state)
-  net = active_player == :top ? net_top : net_bot
-  return policy(state, net)
-end
+# function action_probs(state::Array{Int}, player)
+#   p = ones(30)
+#   zero_impossible_moves!(p,state)
+#   p ./= sum(p)
+#   p
+# end
 
 
-function print_action_probs(probs, width = 80)
+function print_action_probs(state, player::AbstractActorPlayer, width = 80)
+  probs = action_probs(state, player)
   perm = sortperm(probs, rev = true)
   sb = "\e[1m"
   width_left = width
@@ -91,4 +101,18 @@ function print_action_probs(probs, width = 80)
   end
   sb *= " " ^ width_left * "\e[0m"
   println(sb)
+end
+
+function print_action_probs(state, player, width = 100)
+  actions, svals = actions_svals(state,player)
+  perm = sortperm(svals, rev = true)
+  line = ""
+  for i in perm
+    sval = svals[i]
+    action = actions[i]
+    move, pass = idx2MovePass(action)
+    line *= "$(d_moves[move])$pass v$(round(sval,2)); "
+  end
+  line = line[1:min(sizeof(line),width)]
+  println(line)
 end

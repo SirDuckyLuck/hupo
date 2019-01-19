@@ -1,5 +1,4 @@
 
-abstract type AbstractActorPlayer <: AbstractPlayer end
 
 struct ActionPlayer <: AbstractActorPlayer
   net

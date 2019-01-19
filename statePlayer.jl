@@ -1,5 +1,4 @@
 
-abstract type AbstractStatePlayer <: AbstractPlayer end
 
 struct NetPlayer <: AbstractStatePlayer
   net
@@ -19,26 +18,24 @@ end
 #   p.dict[key] = value
 # end
 
+const epsilon = 0.1
 
 function sval_sample_action(state::Array{Int}, player::AbstractStatePlayer)
-  probs = action_probs(state, player)
+  possible_actions, svals = actions_svals(state, player)
 
   r = rand()
   if r < epsilon
-    possible_actions = [x for (x,y) in zip(1:30,probs) if y>0]
     i = Int(ceil(rand()*length(possible_actions)))
     idx = possible_actions[i]
   else
-    idx = indmax(probs)
+    idx = possible_actions[indmax(svals)]
   end
 
   move, pass = idx2MovePass(idx)
 end
 
 function sval_sample_action(state::Array{Int}, sval::Dict)
-  p = ones(30)
-  zero_impossible_moves!(p,state)
-  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
+  possible_actions, svals = actions_svals(state, sval)
 
   r = rand()
   if r < epsilon
@@ -46,19 +43,41 @@ function sval_sample_action(state::Array{Int}, sval::Dict)
     idx = possible_actions[i]
   else
     # choose state according to policy
-    svals = map(possible_actions) do i
-      new_state = copy(state)
-      apply_action!(new_state,idx2MovePass(i))
-      get(sval,state2hash(new_state),0)
-    end
     idx = possible_actions[indmax(svals)]
   end
 
   move, pass = idx2MovePass(idx)
 end
 
+function actions_svals(state::Array{Int}, sval::Dict)
+  p = ones(30)
+  zero_impossible_moves!(p,state)
+  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
 
+  svals = map(possible_actions) do i
+    new_state = copy(state)
+    apply_action!(new_state,idx2MovePass(i))
+    get(sval,state2hash(new_state),0)
+  end
 
+  possible_actions,svals
+end
+
+function actions_svals(state::Array{Int}, player::AbstractStatePlayer)
+  p = ones(30)
+  zero_impossible_moves!(p,state)
+  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
+
+  m = Matrix{Int}(length(player.transform(state)),length(possible_actions))
+  for i in 1:length(possible_actions)
+    new_state = copy(state)
+    apply_action!(new_state,idx2MovePass(possible_actions[i]))
+    m[:,i] = player.transform(new_state)
+  end
+  svals = vec(player.net(m).data)
+
+  possible_actions,svals
+end
 
 function loss(net)
   (states_net, rewards) -> sum((net(states_net)' - rewards).^2)
@@ -69,24 +88,6 @@ function train!(p::NetPlayer,mb)
     m[:,i] = p.transform(mb.states[:,i])
   end
   Flux.train!(loss(p.net), [(m, mb.rewards[1:mb.k])], p.opt)
-end
-
-function action_probs(state::Array{Int}, player::NetPlayer)
-  p = ones(30)
-  zero_impossible_moves!(p,state)
-  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
-
-  # calculate state values according to the net
-  m = Matrix{Int}(length(player.transform(state)),length(possible_actions))
-  for i in 1:length(possible_actions)
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(possible_actions[i]))
-    m[:,i] = player.transform(new_state)
-  end
-  p[possible_actions] = player.net(m).data
-
-  p ./= sum(p)
-  p
 end
 
 
