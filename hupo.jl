@@ -127,6 +127,13 @@ function zero_impossible_moves!(p::Array{Float64}, state::Array{Int})
 end
 
 
+function find_possible_actions(state::Array{Int})
+  p = ones(30)
+  zero_impossible_moves!(p,state)
+  find(p.==1)
+end
+
+
 function check_move_impossibility(new_position::Array{Int}, state::Array{Int})
   # check if there is another stone
   for stone in 1:6
@@ -195,6 +202,16 @@ function check_state(state::Array{Int})
   end
 
   won
+end
+
+function this_player_won(player,won)
+  if (player==:top) && (won==:top_player_won)
+    true
+  elseif (player==:bot) && (won==:bottom_player_won)
+    true
+  else
+    false
+  end
 end
 
 

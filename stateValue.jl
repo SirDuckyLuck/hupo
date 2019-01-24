@@ -26,15 +26,11 @@ function sval_memory_buffer(N::Int)
   sval_memory_buffer(N, 0, zeros(Int, 18, N), zeros(N), zeros(Int, 18, N), zeros(N))
 end
 
-function state2hash(state::Array{Int})
-  # here implement transforming state into a UInt64 integer
-  return hash(state)
-end
 
 const length_of_game_tolerance = 300
-const discount = 0.95
 const r_end = 1.
-const alpha = 0.1
+const discount = 0.95
+
 
 
 global sval_net_top = Chain(
@@ -61,15 +57,17 @@ global ac_player_top = ACPlayer(action_net_top,ADAM(Flux.params(action_net_top))
 
 global sval_top = Dict{UInt64,Float64}()
 
-# global sval_bot = StatePlayer(Dict{UInt64,Float64}())
+global sval_i_top = ImprovedMCPlayer(Dict{UInt64,Float64}(), :top)
+global sval_l_top = LookaheadMCPlayer(Dict{UInt64,Float64}(),:top)
+global sval_i_bot = ImprovedMCPlayer(Dict{UInt64,Float64}(), :bot)
+
 
 global sval_bot = Dict{UInt64,Float64}()
 
+global player_top = sval_i_top
+global player_bot = net_player_bot
 
 function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = false, level = :original)
-
-  player_top = net_player_top
-  player_bot = sval_bot
 
   epoch = 0
   while epoch <= n_epochs
@@ -98,7 +96,7 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
       train!(player_top, mb_top)
     end
     if train_bot
-      train_monte_carlo_online!(player_bot,mb_bot)
+      train!(player_bot,mb_bot)
     end
 
     if epoch % 1000 == 0

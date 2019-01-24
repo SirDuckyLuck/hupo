@@ -6,6 +6,53 @@ struct NetPlayer <: AbstractStatePlayer
   transform
 end
 
+struct ImprovedMCPlayer <: AbstractStatePlayer
+  dict
+  top_or_bot
+end
+
+function get_sval(player::ImprovedMCPlayer,state)
+  won = check_state(state)
+  if won ∈ (:top_player_won, :bottom_player_won)
+    this_player_won(player.top_or_bot,won) ? 1. : -1.
+  else
+    get(player.dict,state2hash(state),0.)
+  end
+end
+
+struct LookaheadMCPlayer <: AbstractStatePlayer
+  dict
+  top_or_bot
+end
+
+function get_sval(player::LookaheadMCPlayer, state, level=1)
+  won = check_state(state)
+  if won ∈ (:top_player_won, :bottom_player_won)
+    this_player_won(player.top_or_bot,won) ? 1. : -1.
+  elseif level==3
+    get(player.dict,state2hash(state),0.)
+  else
+    possible_actions = find_possible_actions(state)
+
+    svals = map(possible_actions) do i
+      new_state = copy(state)
+      apply_action!(new_state,idx2MovePass(i))
+      get_sval(player,new_state, level+1)
+    end
+
+    if get_active_player(state) == player.top_or_bot
+      maximum(svals)
+    else
+      minimum(svals)
+    end
+  end
+end
+
+function state2hash(state::Array{Int})
+  # here implement transforming state into a UInt64 integer
+  return hash(state)
+end
+
 # struct StatePlayer <: AbstractStatePlayer
 #   dict
 # end
@@ -19,40 +66,27 @@ end
 # end
 
 const epsilon = 0.1
+const alpha = 0.1
 
-function sval_sample_action(state::Array{Int}, player::AbstractStatePlayer)
+function sval_sample_action(state::Array{Int}, player::Union{AbstractStatePlayer,Dict})
   possible_actions, svals = actions_svals(state, player)
 
   r = rand()
   if r < epsilon
-    i = Int(ceil(rand()*length(possible_actions)))
-    idx = possible_actions[i]
+    idx = possible_actions[rand(1:end)]
   else
-    idx = possible_actions[indmax(svals)]
+    max = maximum(svals)
+    max_is = find(svals .== max)
+    rand_max = max_is[rand(1:end)]
+    idx = possible_actions[rand_max]
   end
 
   move, pass = idx2MovePass(idx)
 end
 
-function sval_sample_action(state::Array{Int}, sval::Dict)
-  possible_actions, svals = actions_svals(state, sval)
-
-  r = rand()
-  if r < epsilon
-    i = Int(ceil(rand()*length(possible_actions)))
-    idx = possible_actions[i]
-  else
-    # choose state according to policy
-    idx = possible_actions[indmax(svals)]
-  end
-
-  move, pass = idx2MovePass(idx)
-end
 
 function actions_svals(state::Array{Int}, sval::Dict)
-  p = ones(30)
-  zero_impossible_moves!(p,state)
-  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
+  possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
     new_state = copy(state)
@@ -63,10 +97,37 @@ function actions_svals(state::Array{Int}, sval::Dict)
   possible_actions,svals
 end
 
-function actions_svals(state::Array{Int}, player::AbstractStatePlayer)
-  p = ones(30)
-  zero_impossible_moves!(p,state)
-  possible_actions = [x for (x,y) in zip(1:30,p) if y==1]
+function actions_svals(state::Array{Int}, player::ImprovedMCPlayer)
+  possible_actions = find_possible_actions(state)
+
+  svals = map(possible_actions) do i
+    new_state = copy(state)
+    apply_action!(new_state,idx2MovePass(i))
+    if get_active_player(state) == get_active_player(new_state)
+      as,vs = actions_svals(new_state,player)
+      maximum(vs)
+    else
+      get_sval(player,new_state)
+    end
+  end
+
+  possible_actions,svals
+end
+
+function actions_svals(state::Array{Int}, player::LookaheadMCPlayer)
+  possible_actions = find_possible_actions(state)
+
+  svals = map(possible_actions) do i
+    new_state = copy(state)
+    apply_action!(new_state,idx2MovePass(i))
+    get_sval(player,new_state)
+  end
+
+  possible_actions,svals
+end
+
+function actions_svals(state::Array{Int}, player::NetPlayer)
+  possible_actions = find_possible_actions(state)
 
   m = Matrix{Int}(length(player.transform(state)),length(possible_actions))
   for i in 1:length(possible_actions)
@@ -79,6 +140,8 @@ function actions_svals(state::Array{Int}, player::AbstractStatePlayer)
   possible_actions,svals
 end
 
+
+
 function loss(net)
   (states_net, rewards) -> sum((net(states_net)' - rewards).^2)
 end
@@ -90,6 +153,26 @@ function train!(p::NetPlayer,mb)
   Flux.train!(loss(p.net), [(m, mb.rewards[1:mb.k])], p.opt)
 end
 
+
+function train!(p::ImprovedMCPlayer,mb)
+  for i = 1:mb.k
+    s = state2hash(mb.states[:,i])
+    prev_mean = get_sval(p,mb.states[:,i])
+    p.dict[s] = prev_mean + alpha * (mb.rewards[i] - prev_mean)
+  end
+end
+
+
+function train!(p::LookaheadMCPlayer,mb)
+  for i = 1:mb.k
+    s = state2hash(mb.states[:,i])
+    prev_mean = get_sval(p,mb.states[:,i])
+    p.dict[s] = prev_mean + alpha * (mb.rewards[i] - prev_mean)
+    # update also the start state values
+    ss = state2hash(mb.start_states[:,i])
+    p.dict[ss] = (1-alpha) * get_sval(p,mb.start_states[:,i]) + alpha * mb.rewards[i]
+  end
+end
 
 
 const replay_size = 100000
@@ -120,7 +203,6 @@ function train_net_replay!(p::NetPlayer,mb)
   # train on these
   Flux.train!(loss(p.net), [(m_replay[:,rand_i], replay_rewards[rand_i])], p.opt)
 end
-
 
 
 function train_temporal_difference!(sval,mb)
@@ -165,7 +247,7 @@ function train_td_lambda!(sval,mb)
   end
 end
 
-function train_monte_carlo_online!(sval,mb)
+function train!(sval::Dict,mb)
   for i = 1:mb.k
     s = state2hash(mb.states[:,i])
     prev_mean = get(sval,s,0.)
