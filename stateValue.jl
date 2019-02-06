@@ -7,7 +7,7 @@ include("hupo.jl")
 
 include("actorPlayer.jl")
 include("statePlayer.jl")
-
+include("heuristicPlayer.jl")
 
 mutable struct sval_memory_buffer
   N::Int
@@ -61,6 +61,11 @@ global sval_i_top = ImprovedMCPlayer(Dict{UInt64,Float64}(), :top)
 global sval_l_top = LookaheadMCPlayer(Dict{UInt64,Float64}(),:top)
 global sval_i_bot = ImprovedMCPlayer(Dict{UInt64,Float64}(), :bot)
 
+global sval_h_top = HeuristicPlayer(:top)
+global sval_h_bot = HeuristicPlayer(:bot)
+
+global sval_h2_bot = Heuristic2Player(:bot)
+global sval_h2_top = Heuristic2Player(:top)
 
 global sval_bot = Dict{UInt64,Float64}()
 
