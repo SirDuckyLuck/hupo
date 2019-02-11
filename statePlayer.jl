@@ -6,6 +6,30 @@ struct NetPlayer <: AbstractStatePlayer
   transform
 end
 
+function invert_player(p::NetPlayer)
+  new_net = deepcopy(p.net)
+  new_transform = state -> p.transform(invert_state(state))
+  NetPlayer(new_net,ADAM(Flux.params(new_net)),new_transform)
+end
+
+
+struct ImprovedNetPlayer <: AbstractStatePlayer
+  net
+  opt
+  transform
+  top_or_bot
+end
+
+function get_sval(player::ImprovedNetPlayer,state)
+  won = check_state(state)
+  if won ∈ (:top_player_won, :bottom_player_won)
+    this_player_won(player.top_or_bot,won) ? 1. : -1.
+  else
+    player.net(player.transform(state)).data[1]
+  end
+end
+
+
 struct ImprovedMCPlayer <: AbstractStatePlayer
   dict
   top_or_bot
@@ -97,7 +121,7 @@ function actions_svals(state::Array{Int}, sval::Dict)
   possible_actions,svals
 end
 
-function actions_svals(state::Array{Int}, player::ImprovedMCPlayer)
+function actions_svals(state::Array{Int}, player::Union{ImprovedMCPlayer,ImprovedNetPlayer})
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
@@ -145,7 +169,7 @@ end
 function loss(net)
   (states_net, rewards) -> sum((net(states_net)' - rewards).^2)
 end
-function train!(p::NetPlayer,mb)
+function train!(p::Union{NetPlayer,ImprovedNetPlayer},mb)
   m = Matrix{Int}(length(p.transform(rand_state())),mb.k)
   for i in 1:mb.k
     m[:,i] = p.transform(mb.states[:,i])
@@ -189,7 +213,7 @@ function train_net_replay!(p::NetPlayer,mb)
       replay_k -= replay_size
       replay_full = true
     end
-    m_replay[:,replay_k + i] = transformState(mb.states[:,i])
+    m_replay[:,replay_k + i] = p.transform(mb.states[:,i])
     replay_rewards[replay_k + i] = mb.rewards[i]
   end
   replay_k += mb.k

@@ -39,6 +39,8 @@ global sval_net_top = Chain(
     # Dense(72,1))
 global net_player_top = NetPlayer(sval_net_top,ADAM(Flux.params(sval_net_top)),transformState)
 
+global net_i_top = ImprovedNetPlayer(sval_net_top,ADAM(Flux.params(sval_net_top)),transformState,:top)
+
 global sval_net_bot = Chain(
     Dense(72, 100, relu),
     Dense(100,1))
@@ -69,8 +71,8 @@ global sval_h2_top = Heuristic2Player(:top)
 
 global sval_bot = Dict{UInt64,Float64}()
 
-global player_top = sval_i_top
-global player_bot = net_player_bot
+global player_top = net_i_top
+global player_bot = sval_h_bot
 
 function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = false, level = :original)
 
