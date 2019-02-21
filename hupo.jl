@@ -204,6 +204,11 @@ function check_state(state::Array{Int})
   won
 end
 
+function is_end_state(state::Array{Int})
+  won = check_state(state)
+  return won ∈ (:top_player_won, :bottom_player_won)
+end
+
 function this_player_won(player,won)
   if (player==:top) && (won==:top_player_won)
     true

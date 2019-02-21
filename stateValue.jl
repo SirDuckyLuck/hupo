@@ -2,12 +2,14 @@
 abstract type AbstractPlayer end
 abstract type AbstractActorPlayer <: AbstractPlayer end
 abstract type AbstractStatePlayer <: AbstractPlayer end
+abstract type AbstractMCTSPlayer <: AbstractPlayer end
 
 include("hupo.jl")
 
 include("actorPlayer.jl")
 include("statePlayer.jl")
 include("heuristicPlayer.jl")
+include("mctsPlayer.jl")
 
 mutable struct sval_memory_buffer
   N::Int
@@ -71,7 +73,13 @@ global sval_h2_top = Heuristic2Player(:top)
 
 global sval_bot = Dict{UInt64,Float64}()
 
-global player_top = net_i_top
+global mcts_b_top = BasicMCTSPlayer()
+global mcts_h_top = HeuristicMCTSPlayer()
+using DataStructures: DefaultDict
+global mcts_d_top = DictionaryMCTSPlayer(DefaultDict(0.))
+global mcts_net_top = NetMCTSPlayer(sval_net_top,ADAM(Flux.params(sval_net_top)),transformState)
+
+global player_top = mcts_net_top
 global player_bot = sval_h_bot
 
 function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = false, level = :original)
@@ -95,10 +103,6 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
     n_games += 1
     sum_game_lenghts += game_length
 
-    # check whether mb contains the right rewards at the right states
-    global mb_top = mb_top
-    global mb_bot = mb_bot
-
     if train_top
       train!(player_top, mb_top)
     end
@@ -106,7 +110,7 @@ function computeStateValue!(;n_epochs = 1000, train_bot = false, train_top = fal
       train!(player_bot,mb_bot)
     end
 
-    if epoch % 1000 == 0
+    if (epoch % 1000 == 0) || (epoch == n_epochs)
       println("Epoch: $(epoch)")
       top_win = round(top_wins / n_games * 100,1)
       avg_length = round(sum_game_lenghts / n_games,1)
@@ -122,6 +126,8 @@ function sval_game!(sval_top, sval_bot, mb_top, mb_bot, r_end, discount, length_
   active_player = :top
   won = Symbol()
   game_length = 0
+
+  zero_tree!()
 
   while true
     game_length += 1
