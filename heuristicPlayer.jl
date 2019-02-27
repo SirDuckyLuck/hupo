@@ -29,8 +29,7 @@ function actions_svals(state::Array{Int}, player::HeuristicPlayer)
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(i))
+    new_state = apply_action(state,idx2MovePass(i))
     if get_active_player(state) == get_active_player(new_state)
       as,vs = actions_svals(new_state,player)
       maximum(vs)
@@ -79,8 +78,7 @@ function actions_svals(state::Array{Int}, player::Heuristic2Player)
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(i))
+    new_state = apply_action(state,idx2MovePass(i))
     if check_state(new_state) ∈ (:top_player_won, :bottom_player_won)
       get_sval(player,new_state)
     elseif player.top_or_bot == get_active_player(new_state)
@@ -99,8 +97,7 @@ function enemy_actions_svals(state::Array{Int}, player::Heuristic2Player)
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(i))
+    new_state = apply_action(state,idx2MovePass(i))
     if check_state(new_state) ∈ (:top_player_won, :bottom_player_won)
       get_sval(player,new_state)
     elseif player.top_or_bot != get_active_player(new_state)

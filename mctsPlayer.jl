@@ -82,8 +82,7 @@ function mcts_search(p::AbstractMCTSPlayer, state::Array{Int})
   end
   a = best_a
 
-  next_state = copy(state)
-  apply_action!(next_state,idx2MovePass(a))
+  next_state = apply_action(state,idx2MovePass(a))
   v = mcts_search(p,next_state)
 
   this_v = get_active_player(state)==:top ? v : -v
@@ -130,7 +129,7 @@ function rollout(p::BasicMCTSPlayer, state)
     global rollout_d += 1
     actions = find_possible_actions(rollout_state)
     a = actions[rand(1:end)]
-    apply_action!(rollout_state,idx2MovePass(a))
+    rollout_state = apply_action(rollout_state,idx2MovePass(a))
   end
   append!(rollout_d_list,rollout_d)
 

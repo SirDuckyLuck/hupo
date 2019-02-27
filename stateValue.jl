@@ -150,8 +150,7 @@ function sval_game!(sval_top, sval_bot, mb_top, mb_bot, r_end, discount, length_
     mb.start_states[:,mb.k] = state
     mb.actions[mb.k] = action2idx(move, pass)
 
-    active_stone = apply_move!(state, move)
-    apply_pass!(state, active_stone, pass)
+    state = apply_action(state, (move, pass))
     won = check_state(state)
     active_player = get_active_player(state)
 

@@ -59,8 +59,7 @@ function get_sval(player::LookaheadMCPlayer, state, level=1)
     possible_actions = find_possible_actions(state)
 
     svals = map(possible_actions) do i
-      new_state = copy(state)
-      apply_action!(new_state,idx2MovePass(i))
+      new_state = apply_action(state,idx2MovePass(i))
       get_sval(player,new_state, level+1)
     end
 
@@ -125,8 +124,7 @@ function actions_svals(state::Array{Int}, sval::Dict)
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(i))
+    new_state = apply_action(state,idx2MovePass(i))
     get(sval,state2hash(new_state),0)
   end
 
@@ -137,8 +135,7 @@ function actions_svals(state::Array{Int}, player::Union{ImprovedMCPlayer,Improve
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(i))
+    new_state = apply_action(state,idx2MovePass(i))
     if get_active_player(state) == get_active_player(new_state)
       as,vs = actions_svals(new_state,player)
       maximum(vs)
@@ -154,8 +151,7 @@ function actions_svals(state::Array{Int}, player::LookaheadMCPlayer)
   possible_actions = find_possible_actions(state)
 
   svals = map(possible_actions) do i
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(i))
+    new_state = apply_action(state,idx2MovePass(i))
     get_sval(player,new_state)
   end
 
@@ -167,8 +163,7 @@ function actions_svals(state::Array{Int}, player::NetPlayer)
 
   m = Matrix{Int}(length(player.transform(state)),length(possible_actions))
   for i in 1:length(possible_actions)
-    new_state = copy(state)
-    apply_action!(new_state,idx2MovePass(possible_actions[i]))
+    new_state = apply_action(state,idx2MovePass(possible_actions[i]))
     m[:,i] = player.transform(new_state)
   end
   svals = vec(player.net(m).data)

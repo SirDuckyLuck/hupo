@@ -24,8 +24,7 @@ function game_show(player_top, player_bot)
     move, pass = active_player == :top ?
            sval_sample_action(state, player_top) :
            sval_sample_action(state, player_bot)
-    active_stone = apply_move!(state, move)
-    apply_pass!(state, active_stone, pass)
+    state = apply_action(state, (move, pass))
     won = check_state(state)
     active_player = get_active_player(state)
 

@@ -220,10 +220,12 @@ function this_player_won(player,won)
 end
 
 
-function apply_action!(state, action)
+function apply_action(state, action)
   move, pass = action
-  active_stone = apply_move!(state, move)
-  apply_pass!(state, active_stone, pass)
+  new_state = copy(state)
+  active_stone = apply_move!(new_state, move)
+  apply_pass!(new_state, active_stone, pass)
+  return new_state
 end
 
 
@@ -254,7 +256,7 @@ function game(player_top, player_bottom; level = :original)
   while true
     game_length += 1
     action = active_player(state)
-    apply_action!(state, action)
+    state = apply_action(state, action)
     won = check_state(state)
     if won ∈ [:top_player_won :bottom_player_won]
       return won, game_length

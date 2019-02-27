@@ -43,8 +43,7 @@ function game!(net_top, net_bot, mb_top, mb_bot, r_end, discount, length_of_game
       mb.k += 1
     end
 
-    active_stone = apply_move!(state, move)
-    apply_pass!(state, active_stone, pass)
+    state = apply_action(state, (move, pass))
     won = check_state(state)
     active_player = get_active_player(state)
 
