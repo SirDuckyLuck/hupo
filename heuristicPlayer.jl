@@ -5,6 +5,11 @@ struct HeuristicPlayer <: AbstractStatePlayer
   top_or_bot
 end
 
+global heu_epsilon = 0.1
+function get_epsilon(p::HeuristicPlayer)
+  return heu_epsilon
+end
+
 function get_sval(player::HeuristicPlayer,state)
   won = check_state(state)
   if won ∈ (:top_player_won, :bottom_player_won)

@@ -91,12 +91,24 @@ end
 
 const epsilon = 0.1
 const alpha = 0.1
+function get_epsilon(p::Union{AbstractStatePlayer,Dict})
+  return epsilon
+end
+global net_epsilon = 0.1
+function get_epsilon(p::NetPlayer)
+  return net_epsilon
+end
+global i_epsilon = 0.1
+function get_epsilon(p::ImprovedMCPlayer)
+  return i_epsilon
+end
+
 
 function sval_sample_action(state::Array{Int}, player::Union{AbstractStatePlayer,Dict})
   possible_actions, svals = actions_svals(state, player)
 
   r = rand()
-  if r < epsilon
+  if r < get_epsilon(player)
     idx = possible_actions[rand(1:end)]
   else
     max = maximum(svals)

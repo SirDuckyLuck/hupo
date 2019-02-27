@@ -95,14 +95,18 @@ end
 
 function sval_sample_action(state::Array{Int}, player::AbstractMCTSPlayer)
 
-  for i = 1:100
+  global possible_actions = find_possible_actions(state)
+
+  # zero_tree!()
+
+  for i = 1:length(possible_actions)+1
     # append!(depth_list,depth)
     global depth = 0
-    mcts_search(player, state)
+    mcts_search(player, copy(state))
   end
 
-  possible_actions = find_possible_actions(state)
-  action_values = [N[state][a] for a ∈ possible_actions]
+  global action_values = [Q[state][a] for a ∈ possible_actions]
+  global g_state = state
 
   # probs = action_values./sum(action_values)
   # r = rand()

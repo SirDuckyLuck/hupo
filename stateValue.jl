@@ -79,6 +79,12 @@ using DataStructures: DefaultDict
 global mcts_d_top = DictionaryMCTSPlayer(DefaultDict(0.))
 global mcts_net_top = NetMCTSPlayer(sval_net_top,ADAM(Flux.params(sval_net_top)),transformState)
 
+# global g_net_top = GuidedNetPlayer(sval_net_top,ADAM(Flux.params(sval_net_top)),transformState)
+
+# create netPlayer out of NetMCTSPlayer
+# global player_top = NetPlayer(mcts_net_top.net,mcts_net_top.opt,transformState)
+# global player_top = NetMCTSPlayer(net_player_top.net,net_player_top.opt,transformState)
+
 global player_top = mcts_net_top
 global player_bot = sval_h_bot
 
