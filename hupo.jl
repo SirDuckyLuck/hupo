@@ -7,6 +7,7 @@ include("printing.jl")
 include("collectingData.jl")
 # probability: up+1, up+2, ... up+6, right+1, right+2, ..., right+6m ..., out+6
 
+#NOTE active stone could be part of state (to improve performance)
 get_active_stone(state::Array{Int}) = findfirst(view(state, 13:18), 2)
 get_active_player(state::Array{Int}) = get_active_stone(state) < 4 ? :top : :bot
 
@@ -95,37 +96,26 @@ end
 
 
 function zero_impossible_moves!(p::Array{Float64}, state::Array{Int})
-  active_stone = get_active_stone(state)
-  stone_position = [state[active_stone*2 - 1];state[active_stone*2]]
-
-  for move in instances(Move)[1:4] # check moves plausibility except getting out
-    new_position = copy(stone_position)
-    if move == up
-        new_position[1] -=1
-    elseif move == right
-        new_position[2] +=1
-    elseif move == down
-        new_position[1] +=1
-    elseif move == left
-        new_position[2] -=1
-    end
-
-    if check_move_impossibility(new_position, state)
-      idx = (Int(move) - 1)*6 + 1 : Int(move)*6
-      p[idx] .= 0.
+  for move ∈ get_invalid_moves(state)
+    for i ∈ (Int(move) - 1)*6 + 1 : Int(move)*6
+      p[i] = 0
     end
   end
-
-  for pass in 1:6
-    if check_pass_impossibility(pass, state)
-      idx = pass : 6 : 30
-      p[idx] .= 0.
+  for pass ∈ 1:6
+    if !is_valid_pass(pass, state)
+      for i ∈ pass:6:30
+        p[i] = 0
+      end
     end
   end
-
-  (any(p[1:24] .> 0.)) && (p[25:30] .= 0.) # if you can do something else than get kicked, do so
+  return
 end
 
+
+#NOTE blocked squares could be part of state (to improve performance)
+function get_blocked_squares(state)
+  push!([(state[2x - 1], state[2x]) for x ∈ 1:6], (3, 2))
+end
 
 function find_possible_actions(state::Array{Int})
   p = ones(30)
@@ -134,28 +124,37 @@ function find_possible_actions(state::Array{Int})
 end
 
 
-function check_move_impossibility(new_position::Array{Int}, state::Array{Int})
-  # check if there is another stone
-  for stone in 1:6
-    if new_position == state[stone*2-1:stone*2]
-      return true
-    end
-  end
-  # check if middle or out of the board
-  if new_position == [3; 2] || new_position[1] ∈ [0; 6] || new_position[2] ∈ [0; 4]
-    return true
-  end
+function get_valid_moves(state)
+  active_stone = get_active_stone(state)
+  blocked_squares = get_blocked_squares(state)
+  x = state[2active_stone - 1]
+  y = state[2active_stone]
+  valid_moves = Move[]
+  x > 1 && (x - 1, y) ∉ blocked_squares && push!(valid_moves, up)
+  x < 5 && (x + 1, y) ∉ blocked_squares && push!(valid_moves, down)
+  y > 1 && (x, y - 1) ∉ blocked_squares && push!(valid_moves, left)
+  y < 3 && (x, y + 1) ∉ blocked_squares && push!(valid_moves, right)
+  isempty(valid_moves) && push!(valid_moves, out)
+  return valid_moves
+end
 
-  false
+function get_invalid_moves(state)
+  active_stone = get_active_stone(state)
+  blocked_squares = get_blocked_squares(state)
+  x = state[2active_stone - 1]
+  y = state[2active_stone]
+  invalid_moves = Move[]
+  (x <= 1 || (x - 1, y) ∈ blocked_squares) && push!(invalid_moves, up)
+  (x >= 5 || (x + 1, y) ∈ blocked_squares) && push!(invalid_moves, down)
+  (y <= 1 || (x, y - 1) ∈ blocked_squares) && push!(invalid_moves, left)
+  (y >= 3 || (x, y + 1) ∈ blocked_squares) && push!(invalid_moves, right)
+  length(invalid_moves) == 4 || push!(invalid_moves, out)
+  return invalid_moves
 end
 
 
-function check_pass_impossibility(pass::Int, state::Array{Int})
-  if state[12+pass] != 0.
-    return true
-  end
-
-  false
+function is_valid_pass(pass::Int, state::Array{Int})
+  state[12 + pass] == 0
 end
 
 
@@ -192,12 +191,19 @@ function apply_pass!(state::Array{Int}, active_stone::Int, pass::Int)
 end
 
 
+#NOTE can we get rid of this function? (and use just is_end_state)
 function check_state(state::Array{Int})
   won = Symbol()
 
-  if state[1:2] == [4;2] || state[3:4] == [4;2] || state[5:6] == [4;2] || state[16:18] == [-1; -1; -1]
+  if  (state[1] == 4 && state[2] == 2) ||
+      (state[3] == 4 && state[4] == 2) ||
+      (state[5] == 4 && state[6] == 2) ||
+      (state[16] == -1 && state[17] == -1 && state[18] == -1)
     won = :top_player_won
-  elseif state[7:8] == [2;2] || state[9:10] == [2;2] || state[11:12] == [2;2] || state[13:15] == [-1; -1; -1]
+  elseif  (state[7] == 2 && state[8] == 2) ||
+          (state[9] == 2 && state[10] == 2) ||
+          (state[11] == 2 && state[12] == 2) ||
+          (state[13] == -1 && state[14] == -1 && state[15] == -1)
     won = :bottom_player_won
   end
 
