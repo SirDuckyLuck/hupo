@@ -1,7 +1,7 @@
 include("input.jl")
 
 
-function play(opponent, as_top = false)
+function play(opponent, as_top = false; delay = 0.5)
   state = state_beginning()
   my_turn = as_top
 
@@ -25,12 +25,12 @@ function play(opponent, as_top = false)
       move, pass = sval_sample_action(state, opponent)
       new_state = copy(state)
       active_stone = apply_move!(new_state, move)
-      readline()
+      isnan(delay) ? readline() : sleep(delay)
       clear(13)
       print_state(new_state)
       is_end_state(new_state) && break
       apply_pass!(new_state, active_stone, pass)
-      readline()
+      isnan(delay) ? readline() : sleep(delay)
       clear(13)
       print_state(new_state)
       state = new_state

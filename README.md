@@ -12,8 +12,9 @@ julia> play(mcts_net_top)
 #### How to play
 - use arrow keys to move
 - use number keys to pass
-- press Enter when it's opponents turn
 - use `play(opponent, true)` to play as top player
+- use `play(opponent, delay = 0.5)` to set the delay to 0.5 seconds
+  - use `delay = NaN` to confirm each opponent's action by pressing Enter
 - *works on Linux only, support for Windows coming soon ;-)*
 
 ### Rules
