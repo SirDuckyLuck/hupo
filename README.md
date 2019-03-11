@@ -1,5 +1,21 @@
 # Hupo
 
+### Usage
+```julia
+julia> include("stateValue.jl")
+
+julia> computeStateValue!(n_epochs = 10000, train_top = true)
+
+julia> play(mcts_net_top)
+```
+
+#### How to play
+- use arrow keys to move
+- use number keys to pass
+- press Enter when it's opponents turn
+- use `play(opponent, true)` to play as top player
+- *works on Linux only, support for Windows coming soon ;-)*
+
 ### Rules
 https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf  
 but slightly different
@@ -21,7 +37,7 @@ http://ruder.io/optimizing-gradient-descent/
 ### TODO
 1. optimize speed
 2. save "generations" of nets
-3. add environment for human vs net
+3. ~~add environment for human vs net~~
 <!-- 4. add probability information to game printing -->
 5. try ADAM
 6. try different architectures

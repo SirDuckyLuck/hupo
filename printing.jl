@@ -1,5 +1,6 @@
 include("UnicodeGrids.jl")
 using .UnicodeGrids
+include("play.jl")
 
 const d_moves = Dict(up => "↑", right => "→", down => "↓", left => "←", out => "~")
 const d_used_stones = Dict(1 => "₁", 2 => "₂", 3 => "₃", 4 => "₄", 5 => "₅", 6 => "₆")
@@ -30,7 +31,7 @@ function game_show(player_top, player_bot)
 
     round_number += 1
     readline()
-    clear(16)
+    clear(15)
     println("Round $(round_number)")
     print_state(state)
     p = active_player == :top ? player_top : player_bot
@@ -62,7 +63,7 @@ end
 
 "Clear `n` lines above cursor."
 function clear(n::Int)
-  println("\033[$(n)A" * "\033[K\n" ^ n * "\033[$(n)A")
+  print("\033[$(n)A" * "\033[K\n" ^ n * "\033[$(n)A")
 end
 
 #
