@@ -26,12 +26,12 @@ function play(opponent, as_top = false; delay = 0.5)
       new_state = copy(state)
       active_stone = apply_move!(new_state, move)
       isnan(delay) ? readline() : sleep(delay)
-      clear(13)
+      isnan(delay) ? clear(12) : clear(11)
       print_state(new_state)
       is_end_state(new_state) && break
       apply_pass!(new_state, active_stone, pass)
       isnan(delay) ? readline() : sleep(delay)
-      clear(13)
+      isnan(delay) ? clear(12) : clear(11)
       print_state(new_state)
       state = new_state
     end
