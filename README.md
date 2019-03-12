@@ -15,7 +15,6 @@ julia> play(mcts_net_top)
 - use `play(opponent, true)` to play as top player
 - use `play(opponent, delay = 0.5)` to set the delay to 0.5 seconds
   - use `delay = NaN` to confirm each opponent's action by pressing Enter
-- *works on Linux only, support for Windows coming soon ;-)*
 
 ### Rules
 https://intersob.math.muni.cz/oldfoto/2/zadani/ukol07.pdf  
