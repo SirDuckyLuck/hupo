@@ -56,7 +56,52 @@ function get_key()
     run(`stty -raw echo`)
     return key
   elseif is_windows()
-    println("Windows is not supported yet")
+    while true
+      c = ccall("_getch", Cint, ())
+      if c == 3 # Ctrl+C
+        throw(InterruptException())
+      elseif c == 13
+        key = key_enter
+        break
+      elseif c == 8
+        key = key_backspace
+        break
+      elseif c == 49
+        key = key_1
+        break
+      elseif c == 50
+        key = key_2
+        break
+      elseif c == 51
+        key = key_3
+        break
+      elseif c == 52
+        key = key_4
+        break
+      elseif c == 53
+        key = key_5
+        break
+      elseif c == 54
+        key = key_6
+        break
+      elseif c == 224
+        c = ccall("_getch", Cint, ())
+        if c == 72
+          key = key_up
+          break
+        elseif c == 80
+          key = key_down
+          break
+        elseif c == 77
+          key = key_right
+          break
+        elseif c == 75
+          key = key_left
+          break
+        end
+      end
+    end
+    return key
   else
     println("unsupported OS")
   end
